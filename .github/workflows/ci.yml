@@ -67,3 +67,25 @@ jobs:
 
       - name: Check formatting
         run: dotnet format smart-ops-hub.sln --verify-no-changes --verbosity diagnostic
+
+  docker:
+    name: Docker Build
+    runs-on: ubuntu-latest
+    needs: build
+
+    strategy:
+      matrix:
+        include:
+          - image: smartopshub-api
+            dockerfile: src/SmartOpsHub.Api/Dockerfile
+          - image: smartopshub-web
+            dockerfile: src/SmartOpsHub.Web/Dockerfile
+          - image: smartopshub-mcp-gateway
+            dockerfile: src/SmartOpsHub.Mcp/SmartOpsHub.Mcp.Gateway/Dockerfile
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Build Docker image
+        run: docker build -f ${{ matrix.dockerfile }} -t ${{ matrix.image }}:ci .

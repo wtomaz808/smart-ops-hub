@@ -1,6 +1,8 @@
 FROM mcr.microsoft.com/dotnet/sdk:9.0 AS build
 WORKDIR /src
 
+COPY Directory.Build.props ./
+COPY global.json ./
 COPY ["src/SmartOpsHub.Core/SmartOpsHub.Core.csproj", "SmartOpsHub.Core/"]
 COPY ["src/SmartOpsHub.Infrastructure/SmartOpsHub.Infrastructure.csproj", "SmartOpsHub.Infrastructure/"]
 COPY ["src/SmartOpsHub.Web/SmartOpsHub.Web.csproj", "SmartOpsHub.Web/"]

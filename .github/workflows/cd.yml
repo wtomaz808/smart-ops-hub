@@ -16,6 +16,7 @@ env:
   RESOURCE_GROUP: ${{ vars.AZURE_RESOURCE_GROUP }}
   API_IMAGE: smartopshub-api
   WEB_IMAGE: smartopshub-web
+  GATEWAY_IMAGE: smartopshub-mcp-gateway
 
 jobs:
   build-and-push:
@@ -48,6 +49,11 @@ jobs:
           docker build -f src/SmartOpsHub.Web/Dockerfile -t ${{ env.ACR_LOGIN_SERVER }}/${{ env.WEB_IMAGE }}:${{ github.sha }} -t ${{ env.ACR_LOGIN_SERVER }}/${{ env.WEB_IMAGE }}:latest .
           docker push ${{ env.ACR_LOGIN_SERVER }}/${{ env.WEB_IMAGE }} --all-tags
 
+      - name: Build and push MCP Gateway image
+        run: |
+          docker build -f src/SmartOpsHub.Mcp/SmartOpsHub.Mcp.Gateway/Dockerfile -t ${{ env.ACR_LOGIN_SERVER }}/${{ env.GATEWAY_IMAGE }}:${{ github.sha }} -t ${{ env.ACR_LOGIN_SERVER }}/${{ env.GATEWAY_IMAGE }}:latest .
+          docker push ${{ env.ACR_LOGIN_SERVER }}/${{ env.GATEWAY_IMAGE }} --all-tags
+
   deploy-dev:
     name: Deploy to Dev
     runs-on: ubuntu-latest
@@ -76,3 +82,10 @@ jobs:
           resourceGroup: ${{ env.RESOURCE_GROUP }}
           containerAppName: ${{ vars.WEB_CONTAINER_APP_NAME }}
           imageToDeploy: ${{ env.ACR_LOGIN_SERVER }}/${{ env.WEB_IMAGE }}:${{ github.sha }}
+
+      - name: Deploy MCP Gateway to Azure Container Apps
+        uses: azure/container-apps-deploy-action@v1
+        with:
+          resourceGroup: ${{ env.RESOURCE_GROUP }}
+          containerAppName: ${{ vars.GATEWAY_CONTAINER_APP_NAME }}
+          imageToDeploy: ${{ env.ACR_LOGIN_SERVER }}/${{ env.GATEWAY_IMAGE }}:${{ github.sha }}
