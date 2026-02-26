@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\SmartOpsHub.Core\SmartOpsHub.Core.csproj" />
+    <ProjectReference Include="..\SmartOpsHub.Mcp.GitHub\SmartOpsHub.Mcp.GitHub.csproj" />
+    <ProjectReference Include="..\SmartOpsHub.Mcp.Azure\SmartOpsHub.Mcp.Azure.csproj" />
+    <ProjectReference Include="..\SmartOpsHub.Mcp.Ado\SmartOpsHub.Mcp.Ado.csproj" />
+    <ProjectReference Include="..\SmartOpsHub.Mcp.DotNet\SmartOpsHub.Mcp.DotNet.csproj" />
+    <ProjectReference Include="..\SmartOpsHub.Mcp.AI\SmartOpsHub.Mcp.AI.csproj" />
+    <ProjectReference Include="..\SmartOpsHub.Mcp.DevOps\SmartOpsHub.Mcp.DevOps.csproj" />
+    <ProjectReference Include="..\SmartOpsHub.Mcp.Personal\SmartOpsHub.Mcp.Personal.csproj" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+
+</Project>

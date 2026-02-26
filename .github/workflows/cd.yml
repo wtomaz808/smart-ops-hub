@@ -1,0 +1,78 @@
+name: CD
+
+on:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  id-token: write
+  contents: read
+
+env:
+  ACR_LOGIN_SERVER: ${{ vars.ACR_LOGIN_SERVER }}
+  RESOURCE_GROUP: ${{ vars.AZURE_RESOURCE_GROUP }}
+  API_IMAGE: smartopshub-api
+  WEB_IMAGE: smartopshub-web
+
+jobs:
+  build-and-push:
+    name: Build & Push Docker Images
+    runs-on: ubuntu-latest
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Azure Login (OIDC)
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+          environment: AzureUSGovernment
+
+      - name: Login to ACR
+        run: az acr login --name ${{ vars.ACR_NAME }}
+
+      - name: Build and push API image
+        run: |
+          docker build -f src/SmartOpsHub.Api/Dockerfile -t ${{ env.ACR_LOGIN_SERVER }}/${{ env.API_IMAGE }}:${{ github.sha }} -t ${{ env.ACR_LOGIN_SERVER }}/${{ env.API_IMAGE }}:latest .
+          docker push ${{ env.ACR_LOGIN_SERVER }}/${{ env.API_IMAGE }} --all-tags
+
+      - name: Build and push Web image
+        run: |
+          docker build -f src/SmartOpsHub.Web/Dockerfile -t ${{ env.ACR_LOGIN_SERVER }}/${{ env.WEB_IMAGE }}:${{ github.sha }} -t ${{ env.ACR_LOGIN_SERVER }}/${{ env.WEB_IMAGE }}:latest .
+          docker push ${{ env.ACR_LOGIN_SERVER }}/${{ env.WEB_IMAGE }} --all-tags
+
+  deploy-dev:
+    name: Deploy to Dev
+    runs-on: ubuntu-latest
+    needs: build-and-push
+    environment: dev
+
+    steps:
+      - name: Azure Login (OIDC)
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+          environment: AzureUSGovernment
+
+      - name: Deploy API to Azure Container Apps
+        uses: azure/container-apps-deploy-action@v1
+        with:
+          resourceGroup: ${{ env.RESOURCE_GROUP }}
+          containerAppName: ${{ vars.API_CONTAINER_APP_NAME }}
+          imageToDeploy: ${{ env.ACR_LOGIN_SERVER }}/${{ env.API_IMAGE }}:${{ github.sha }}
+
+      - name: Deploy Web to Azure Container Apps
+        uses: azure/container-apps-deploy-action@v1
+        with:
+          resourceGroup: ${{ env.RESOURCE_GROUP }}
+          containerAppName: ${{ vars.WEB_CONTAINER_APP_NAME }}
+          imageToDeploy: ${{ env.ACR_LOGIN_SERVER }}/${{ env.WEB_IMAGE }}:${{ github.sha }}

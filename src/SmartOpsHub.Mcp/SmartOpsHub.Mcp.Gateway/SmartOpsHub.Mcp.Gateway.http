@@ -1,0 +1,6 @@
+@SmartOpsHub.Mcp.Gateway_HostAddress = http://localhost:5184
+
+GET {{SmartOpsHub.Mcp.Gateway_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

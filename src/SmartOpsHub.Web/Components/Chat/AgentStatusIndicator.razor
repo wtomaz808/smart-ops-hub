@@ -1,0 +1,51 @@
+@using SmartOpsHub.Core.Models
+
+<span class="status-indicator @StatusClass" title="@Status.ToString()"></span>
+
+@code {
+    [Parameter, EditorRequired]
+    public AgentSessionStatus Status { get; set; }
+
+    private string StatusClass => Status switch
+    {
+        AgentSessionStatus.Idle => "status-idle",
+        AgentSessionStatus.Thinking => "status-thinking",
+        AgentSessionStatus.Working => "status-working",
+        AgentSessionStatus.Error => "status-error",
+        _ => "status-idle"
+    };
+}
+
+<style>
+    .status-indicator {
+        display: inline-block;
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        margin-right: 0.4rem;
+        vertical-align: middle;
+    }
+
+    .status-idle {
+        background-color: #198754;
+    }
+
+    .status-thinking {
+        background-color: #ffc107;
+        animation: pulse 1.2s ease-in-out infinite;
+    }
+
+    .status-working {
+        background-color: #0d6efd;
+        animation: pulse 1.2s ease-in-out infinite;
+    }
+
+    .status-error {
+        background-color: #dc3545;
+    }
+
+    @@keyframes pulse {
+        0%, 100% { opacity: 1; transform: scale(1); }
+        50% { opacity: 0.5; transform: scale(1.2); }
+    }
+</style>

@@ -1,0 +1,54 @@
+@using SmartOpsHub.Core.Interfaces
+@using SmartOpsHub.Core.Models
+@inject IAgentRegistry AgentRegistry
+
+<div class="agent-workspace">
+    @foreach (var agent in _agents)
+    {
+        <div class="agent-workspace-cell">
+            <AgentChatPanel Agent="@agent" />
+        </div>
+    }
+</div>
+
+@code {
+    private IReadOnlyList<AgentDefinition> _agents = [];
+
+    protected override void OnInitialized()
+    {
+        _agents = AgentRegistry.GetAllAgents()
+            .Where(a => a.IsEnabled)
+            .ToList();
+    }
+}
+
+<style>
+    .agent-workspace {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 1rem;
+        height: calc(100vh - 120px);
+        padding: 1rem;
+    }
+
+    .agent-workspace-cell {
+        min-height: 0;
+    }
+
+    @@media (max-width: 1200px) {
+        .agent-workspace {
+            grid-template-columns: repeat(2, 1fr);
+        }
+    }
+
+    @@media (max-width: 768px) {
+        .agent-workspace {
+            grid-template-columns: 1fr;
+            height: auto;
+        }
+
+        .agent-workspace-cell {
+            height: 500px;
+        }
+    }
+</style>

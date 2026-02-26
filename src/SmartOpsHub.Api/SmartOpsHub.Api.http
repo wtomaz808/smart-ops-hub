@@ -1,0 +1,6 @@
+@SmartOpsHub.Api_HostAddress = http://localhost:5100
+
+GET {{SmartOpsHub.Api_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

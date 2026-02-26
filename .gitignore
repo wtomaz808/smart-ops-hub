@@ -1,0 +1,50 @@
+# Smart Ops Hub
+
+## .NET
+[Bb]in/
+[Oo]bj/
+[Dd]ebug/
+[Rr]elease/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+*.userprefs
+.vs/
+project.lock.json
+*.nuget.props
+*.nuget.targets
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Docker
+.env
+docker-compose.override.yml
+
+# Azure
+.azure/
+*.pubxml
+*.publishproj
+
+# Secrets
+appsettings.*.json
+!appsettings.json
+!appsettings.Development.json
+
+# Test results
+TestResults/
+coverage/
+*.trx
+
+# Infra
+*.tfstate
+*.tfstate.backup
