@@ -1,3 +1,6 @@
+using Azure.Identity;
+using Azure.Monitor.Query;
+using Azure.ResourceManager;
 using SmartOpsHub.Core.Interfaces;
 using SmartOpsHub.Core.Models;
 using SmartOpsHub.Mcp.Ado;
@@ -12,6 +15,9 @@ using SmartOpsHub.Mcp.Personal.Plugins;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// Shared Azure credential for all Azure SDK clients
+var azureCredential = new DefaultAzureCredential();
+
 // Register GitHub API client with auth
 builder.Services.AddSingleton<Octokit.GitHubClient>(sp =>
 {
@@ -21,6 +27,18 @@ builder.Services.AddSingleton<Octokit.GitHubClient>(sp =>
         client.Credentials = new Octokit.Credentials(token);
     return client;
 });
+
+// Register Azure SDK clients
+builder.Services.AddSingleton(new ArmClient(azureCredential));
+builder.Services.AddSingleton(new LogsQueryClient(azureCredential));
+builder.Services.AddSingleton(new MetricsQueryClient(azureCredential));
+
+// Register Azure OpenAI client for AI MCP
+var aoaiEndpoint = builder.Configuration["AzureOpenAI:Endpoint"];
+if (!string.IsNullOrEmpty(aoaiEndpoint))
+    builder.Services.AddSingleton(new Azure.AI.OpenAI.AzureOpenAIClient(new Uri(aoaiEndpoint), azureCredential));
+else
+    builder.Services.AddSingleton(new Azure.AI.OpenAI.AzureOpenAIClient(new Uri("https://placeholder.openai.azure.us/"), azureCredential));
 
 // Register MCP clients
 builder.Services.AddSingleton<GitHubMcpClient>();
