@@ -5,6 +5,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <IsPackable>false</IsPackable>
+    <NoWarn>CA1707</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>
@@ -20,6 +21,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\SmartOpsHub.Mcp\SmartOpsHub.Mcp.Gateway\SmartOpsHub.Mcp.Gateway.csproj" />
+    <ProjectReference Include="..\..\src\SmartOpsHub.Mcp\SmartOpsHub.Mcp.GitHub\SmartOpsHub.Mcp.GitHub.csproj" />
     <ProjectReference Include="..\..\src\SmartOpsHub.Core\SmartOpsHub.Core.csproj" />
   </ItemGroup>
 

@@ -12,6 +12,16 @@ using SmartOpsHub.Mcp.Personal.Plugins;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// Register GitHub API client with auth
+builder.Services.AddSingleton<Octokit.GitHubClient>(sp =>
+{
+    var client = new Octokit.GitHubClient(new Octokit.ProductHeaderValue("SmartOpsHub"));
+    var token = builder.Configuration["GitHub:Token"];
+    if (!string.IsNullOrEmpty(token))
+        client.Credentials = new Octokit.Credentials(token);
+    return client;
+});
+
 // Register MCP clients
 builder.Services.AddSingleton<GitHubMcpClient>();
 builder.Services.AddSingleton<AzureMcpClient>();
