@@ -14,6 +14,7 @@ public sealed class SmartOpsHubDbContext : DbContext
     }
 
     public DbSet<ConversationLog> ConversationLogs => Set<ConversationLog>();
+    public DbSet<SessionEntity> AgentSessions => Set<SessionEntity>();
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
     {
@@ -33,13 +34,31 @@ public sealed class SmartOpsHubDbContext : DbContext
             entity.ToTable("ConversationLogs");
             entity.HasKey(e => e.Id);
             entity.Property(e => e.Id).HasDefaultValueSql("NEWSEQUENTIALID()");
+            entity.Property(e => e.SessionId).HasMaxLength(128).IsRequired();
             entity.Property(e => e.UserId).HasMaxLength(256).IsRequired();
             entity.Property(e => e.AgentType).HasMaxLength(64).IsRequired();
             entity.Property(e => e.MessageContent).IsRequired();
             entity.Property(e => e.Role).HasMaxLength(32).IsRequired();
             entity.Property(e => e.Timestamp).IsRequired();
             entity.HasIndex(e => e.UserId);
+            entity.HasIndex(e => e.SessionId);
             entity.HasIndex(e => e.Timestamp);
+        });
+
+        modelBuilder.Entity<SessionEntity>(entity =>
+        {
+            entity.ToTable("AgentSessions");
+            entity.HasKey(e => e.SessionId);
+            entity.Property(e => e.SessionId).HasMaxLength(128);
+            entity.Property(e => e.UserId).HasMaxLength(256).IsRequired();
+            entity.Property(e => e.AgentType).HasMaxLength(64).IsRequired();
+            entity.Property(e => e.AgentName).HasMaxLength(128).IsRequired();
+            entity.Property(e => e.SystemPrompt).IsRequired();
+            entity.Property(e => e.Status).HasMaxLength(32).IsRequired();
+            entity.HasIndex(e => e.UserId);
+            entity.HasMany(e => e.Messages)
+                  .WithOne(e => e.Session)
+                  .HasForeignKey(e => e.SessionId);
         });
     }
 }

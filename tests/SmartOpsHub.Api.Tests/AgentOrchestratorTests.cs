@@ -69,6 +69,64 @@ internal sealed class FakeMcpClient : IMcpClient
     public Task<bool> IsHealthyAsync(CancellationToken cancellationToken = default) => Task.FromResult(true);
 }
 
+internal sealed class FakeSessionRepository : ISessionRepository
+{
+    private readonly Dictionary<string, AgentSession> _sessions = [];
+
+    public Task<AgentSession?> GetByIdAsync(string sessionId, CancellationToken cancellationToken = default)
+    {
+        _sessions.TryGetValue(sessionId, out var session);
+        return Task.FromResult(session);
+    }
+
+    public Task<IReadOnlyList<AgentSession>> GetByUserIdAsync(string userId, CancellationToken cancellationToken = default)
+        => Task.FromResult<IReadOnlyList<AgentSession>>(_sessions.Values.Where(s => s.UserId == userId).ToList());
+
+    public Task SaveAsync(AgentSession session, CancellationToken cancellationToken = default)
+    {
+        _sessions[session.SessionId] = session;
+        return Task.CompletedTask;
+    }
+
+    public Task UpdateStatusAsync(string sessionId, AgentSessionStatus status, CancellationToken cancellationToken = default)
+    {
+        if (_sessions.TryGetValue(sessionId, out var session))
+            session.Status = status;
+        return Task.CompletedTask;
+    }
+
+    public Task DeleteAsync(string sessionId, CancellationToken cancellationToken = default)
+    {
+        _sessions.Remove(sessionId);
+        return Task.CompletedTask;
+    }
+}
+
+internal sealed class FakeConversationRepository : IConversationRepository
+{
+    private readonly Dictionary<string, List<ChatMessage>> _messages = [];
+
+    public Task AddMessageAsync(string sessionId, ChatMessage message, CancellationToken cancellationToken = default)
+    {
+        if (!_messages.TryGetValue(sessionId, out var list))
+        {
+            list = [];
+            _messages[sessionId] = list;
+        }
+        list.Add(message);
+        return Task.CompletedTask;
+    }
+
+    public Task<IReadOnlyList<ChatMessage>> GetMessagesAsync(string sessionId, CancellationToken cancellationToken = default)
+        => Task.FromResult<IReadOnlyList<ChatMessage>>(_messages.GetValueOrDefault(sessionId, []).ToList());
+
+    public Task DeleteBySessionAsync(string sessionId, CancellationToken cancellationToken = default)
+    {
+        _messages.Remove(sessionId);
+        return Task.CompletedTask;
+    }
+}
+
 #endregion
 
 public class AgentOrchestratorTests
@@ -76,12 +134,16 @@ public class AgentOrchestratorTests
     private static AgentOrchestrator CreateOrchestrator(
         FakeAiCompletionService? ai = null,
         FakeAgentRegistry? registry = null,
-        FakeMcpGateway? gateway = null)
+        FakeMcpGateway? gateway = null,
+        FakeSessionRepository? sessionRepo = null,
+        FakeConversationRepository? convRepo = null)
     {
         return new AgentOrchestrator(
             registry ?? new FakeAgentRegistry(),
             ai ?? new FakeAiCompletionService(),
             gateway ?? new FakeMcpGateway(),
+            sessionRepo ?? new FakeSessionRepository(),
+            convRepo ?? new FakeConversationRepository(),
             NullLogger<AgentOrchestrator>.Instance);
     }
 

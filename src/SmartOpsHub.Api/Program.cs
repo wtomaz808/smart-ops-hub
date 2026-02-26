@@ -2,7 +2,9 @@ using SmartOpsHub.Api.Endpoints;
 using SmartOpsHub.Api.Orchestration;
 using SmartOpsHub.Core.Interfaces;
 using SmartOpsHub.Infrastructure.AI;
+using SmartOpsHub.Infrastructure.Data;
 using SmartOpsHub.Infrastructure.Services;
+using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -51,20 +53,31 @@ builder.Services.AddCors(options =>
     });
 });
 
+// --- Database ---
+builder.Services.AddDbContext<SmartOpsHubDbContext>(options =>
+{
+    var connectionString = builder.Configuration.GetConnectionString("SmartOpsHub");
+    if (!string.IsNullOrEmpty(connectionString))
+    {
+        options.UseSqlServer(connectionString);
+    }
+    else
+    {
+        // In-memory fallback for local development without SQL Server
+        options.UseInMemoryDatabase("SmartOpsHub");
+    }
+});
+
 // --- Application Services ---
 builder.Services.AddSingleton<IAgentRegistry, AgentRegistryService>();
-builder.Services.AddSingleton<IAgentOrchestrator, AgentOrchestrator>();
+builder.Services.AddScoped<ISessionRepository, SessionRepository>();
+builder.Services.AddScoped<IConversationRepository, ConversationRepository>();
+builder.Services.AddScoped<IAgentOrchestrator, AgentOrchestrator>();
 builder.Services.AddSingleton<IAiCompletionService, AzureOpenAiCompletionService>();
 builder.Services.AddSingleton<McpToolExecutor>();
 
-// IMcpGateway — registered from Infrastructure if available, otherwise a stub
-builder.Services.AddSingleton<IMcpGateway>(sp =>
-{
-    // Resolve from DI if Infrastructure registers one; placeholder for startup
-    var gateway = sp.GetService<IMcpGateway>();
-    return gateway ?? throw new InvalidOperationException(
-        "IMcpGateway is not registered. Register an implementation in the Infrastructure layer.");
-});
+// IMcpGateway — stub until MCP Gateway container is deployed
+builder.Services.AddSingleton<IMcpGateway, StubMcpGateway>();
 
 // --- Health Checks ---
 builder.Services.AddHealthChecks();

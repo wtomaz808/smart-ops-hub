@@ -1,15 +1,14 @@
 using System.Net;
 using System.Text.Json;
-using Microsoft.AspNetCore.Mvc.Testing;
 
 namespace SmartOpsHub.Api.Tests;
 
-public class HealthEndpointTests : IClassFixture<WebApplicationFactory<Program>>
+public class HealthEndpointTests : IClassFixture<ApiTestFactory>
 {
     private readonly HttpClient _client;
     private static readonly JsonSerializerOptions JsonOptions = new() { PropertyNameCaseInsensitive = true };
 
-    public HealthEndpointTests(WebApplicationFactory<Program> factory)
+    public HealthEndpointTests(ApiTestFactory factory)
     {
         _client = factory.CreateClient();
     }
