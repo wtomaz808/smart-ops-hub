@@ -78,6 +78,26 @@ public sealed partial class AgentChatService : IAsyncDisposable
         return new NoOpDisposable();
     }
 
+    public IDisposable OnStreamToken(string agentId, Action<string> handler)
+    {
+        if (_connections.TryGetValue(agentId, out var connection))
+        {
+            return connection.On("ReceiveStreamToken", handler);
+        }
+
+        return new NoOpDisposable();
+    }
+
+    public IDisposable OnStreamComplete(string agentId, Action handler)
+    {
+        if (_connections.TryGetValue(agentId, out var connection))
+        {
+            return connection.On("StreamComplete", handler);
+        }
+
+        return new NoOpDisposable();
+    }
+
     public IDisposable OnStatusChanged(string agentId, Action<AgentSessionStatus> handler)
     {
         if (_connections.TryGetValue(agentId, out var connection))

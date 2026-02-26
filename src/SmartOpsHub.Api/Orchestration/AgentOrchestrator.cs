@@ -1,4 +1,6 @@
 using System.Collections.Concurrent;
+using System.Runtime.CompilerServices;
+using System.Text;
 using SmartOpsHub.Core.Interfaces;
 using SmartOpsHub.Core.Models;
 
@@ -91,6 +93,47 @@ public sealed partial class AgentOrchestrator(
             LogProcessMessageError(logger, ex, sessionId);
             throw;
         }
+    }
+
+    public async IAsyncEnumerable<string> StreamMessageAsync(
+        string sessionId,
+        string userMessage,
+        [EnumeratorCancellation] CancellationToken cancellationToken = default)
+    {
+        var session = await GetRequiredSessionAsync(sessionId, cancellationToken).ConfigureAwait(false);
+        session.Status = AgentSessionStatus.Thinking;
+
+        var userMsg = new ChatMessage
+        {
+            Role = ChatRole.User,
+            Content = userMessage
+        };
+        session.AddMessage(userMsg);
+        await conversationRepository.AddMessageAsync(sessionId, userMsg, cancellationToken).ConfigureAwait(false);
+
+        var tools = await GetToolsForAgent(session.AgentType, cancellationToken).ConfigureAwait(false);
+
+        var fullResponse = new StringBuilder();
+        await foreach (var token in aiCompletionService.StreamCompletionAsync(
+            session.ConversationHistory, tools, cancellationToken).ConfigureAwait(false))
+        {
+            fullResponse.Append(token);
+            yield return token;
+        }
+
+        var assistantMessage = new ChatMessage
+        {
+            Role = ChatRole.Assistant,
+            Content = fullResponse.ToString()
+        };
+
+        session.AddMessage(assistantMessage);
+        session.Status = AgentSessionStatus.Idle;
+
+        await conversationRepository.AddMessageAsync(sessionId, assistantMessage, cancellationToken).ConfigureAwait(false);
+        await sessionRepository.SaveAsync(session, cancellationToken).ConfigureAwait(false);
+
+        LogMessageProcessed(logger, sessionId, session.ConversationHistory.Count);
     }
 
     public async Task<AgentSession?> GetSessionAsync(string sessionId, CancellationToken cancellationToken = default)

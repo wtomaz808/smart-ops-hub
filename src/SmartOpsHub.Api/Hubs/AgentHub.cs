@@ -28,9 +28,12 @@ public sealed partial class AgentHub(
 
         try
         {
-            var response = await orchestrator.ProcessMessageAsync(sessionId, message, Context.ConnectionAborted);
+            await foreach (var token in orchestrator.StreamMessageAsync(sessionId, message, Context.ConnectionAborted))
+            {
+                await Clients.Group(sessionId).SendAsync("ReceiveStreamToken", token, Context.ConnectionAborted);
+            }
 
-            await Clients.Group(sessionId).SendAsync("ReceiveMessage", response, Context.ConnectionAborted);
+            await Clients.Group(sessionId).SendAsync("StreamComplete", Context.ConnectionAborted);
             await SendStatusUpdate(sessionId, AgentSessionStatus.Idle);
         }
         catch (Exception ex)

@@ -36,6 +36,7 @@ internal sealed class FakeAiCompletionService : IAiCompletionService
     public async IAsyncEnumerable<string> StreamCompletionAsync(IReadOnlyList<ChatMessage> messages,
         IReadOnlyList<McpToolDefinition>? availableTools = null, [EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
+        if (ShouldThrow) throw new InvalidOperationException("AI service unavailable");
         foreach (var word in NextResponse.Split(' '))
         {
             yield return word + " ";
@@ -294,5 +295,81 @@ public class AgentOrchestratorTests
 
         // System + (User+Assistant) * 2 = 5
         Assert.Equal(5, session.ConversationHistory.Count);
+    }
+
+    // ─── Streaming Tests ──────────────────────────────────────────
+
+    [Fact]
+    public async Task StreamMessageAsync_YieldsTokens()
+    {
+        var ai = new FakeAiCompletionService { NextResponse = "Hello from AI" };
+        var orchestrator = CreateOrchestrator(ai: ai);
+        var session = await orchestrator.CreateSessionAsync("user-1", AgentType.GitHub);
+
+        var tokens = new List<string>();
+        await foreach (var token in orchestrator.StreamMessageAsync(session.SessionId, "Hi"))
+        {
+            tokens.Add(token);
+        }
+
+        Assert.NotEmpty(tokens);
+        Assert.Equal("Hello from AI ", string.Concat(tokens));
+    }
+
+    [Fact]
+    public async Task StreamMessageAsync_PersistsFullResponse()
+    {
+        var ai = new FakeAiCompletionService { NextResponse = "Streamed response" };
+        var convRepo = new FakeConversationRepository();
+        var orchestrator = CreateOrchestrator(ai: ai, convRepo: convRepo);
+        var session = await orchestrator.CreateSessionAsync("user-1", AgentType.GitHub);
+
+        await foreach (var _ in orchestrator.StreamMessageAsync(session.SessionId, "Hi")) { }
+
+        // System + User + Assistant = 3
+        Assert.Equal(3, session.ConversationHistory.Count);
+        Assert.Equal(ChatRole.Assistant, session.ConversationHistory[2].Role);
+        Assert.Equal("Streamed response ", session.ConversationHistory[2].Content);
+    }
+
+    [Fact]
+    public async Task StreamMessageAsync_SetsStatusToIdleAfterComplete()
+    {
+        var orchestrator = CreateOrchestrator();
+        var session = await orchestrator.CreateSessionAsync("user-1", AgentType.GitHub);
+
+        await foreach (var _ in orchestrator.StreamMessageAsync(session.SessionId, "Hi")) { }
+
+        Assert.Equal(AgentSessionStatus.Idle, session.Status);
+    }
+
+    [Fact]
+    public async Task StreamMessageAsync_NonExistentSession_Throws()
+    {
+        var orchestrator = CreateOrchestrator();
+
+        await Assert.ThrowsAsync<KeyNotFoundException>(async () =>
+        {
+            await foreach (var _ in orchestrator.StreamMessageAsync("nonexistent-id", "Hi")) { }
+        });
+    }
+
+    [Fact]
+    public async Task StreamMessageAsync_MultipleTokens_ConcatenateToFullResponse()
+    {
+        var ai = new FakeAiCompletionService { NextResponse = "one two three" };
+        var orchestrator = CreateOrchestrator(ai: ai);
+        var session = await orchestrator.CreateSessionAsync("user-1", AgentType.GitHub);
+
+        var tokens = new List<string>();
+        await foreach (var token in orchestrator.StreamMessageAsync(session.SessionId, "Count"))
+        {
+            tokens.Add(token);
+        }
+
+        Assert.Equal(3, tokens.Count);
+        Assert.Equal("one ", tokens[0]);
+        Assert.Equal("two ", tokens[1]);
+        Assert.Equal("three ", tokens[2]);
     }
 }
