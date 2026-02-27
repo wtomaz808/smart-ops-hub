@@ -1,0 +1,408 @@
+@page "/admin"
+@rendermode InteractiveServer
+@using SmartOpsHub.Core.Interfaces
+@using SmartOpsHub.Core.Models
+@inject IAgentRegistry AgentRegistry
+
+<PageTitle>Admin — Smart Ops Hub</PageTitle>
+
+<div class="admin-page">
+    <h2 class="admin-title">Settings &amp; Administration</h2>
+
+    @* ─── Theme & Branding ─── *@
+    <section class="admin-section">
+        <h4 class="section-heading">Theme &amp; Branding</h4>
+        <div class="admin-card">
+            <div class="setting-row">
+                <div class="setting-label">
+                    <strong>Dark Mode</strong>
+                    <span class="setting-desc">Switch between light and dark theme</span>
+                </div>
+                <label class="toggle-switch">
+                    <input type="checkbox" @bind="_darkMode" @bind:after="OnThemeChanged" />
+                    <span class="toggle-slider"></span>
+                </label>
+            </div>
+            <div class="setting-row">
+                <div class="setting-label">
+                    <strong>Logo URL</strong>
+                    <span class="setting-desc">Custom logo for the sidebar brand</span>
+                </div>
+                <input type="text" class="form-input" @bind="_logoUrl" placeholder="https://example.com/logo.png" />
+            </div>
+            <div class="setting-row">
+                <div class="setting-label">
+                    <strong>Application Title</strong>
+                    <span class="setting-desc">Displayed in the sidebar and browser tab</span>
+                </div>
+                <input type="text" class="form-input" @bind="_appTitle" placeholder="Smart Ops Hub" />
+            </div>
+        </div>
+    </section>
+
+    @* ─── Classification Banner ─── *@
+    <section class="admin-section">
+        <h4 class="section-heading">Classification Banner</h4>
+        <div class="admin-card">
+            <div class="setting-row">
+                <div class="setting-label">
+                    <strong>Enabled</strong>
+                    <span class="setting-desc">Show a classification banner at the top and bottom of the page</span>
+                </div>
+                <label class="toggle-switch">
+                    <input type="checkbox" @bind="_bannerEnabled" />
+                    <span class="toggle-slider"></span>
+                </label>
+            </div>
+            <div class="setting-row">
+                <div class="setting-label">
+                    <strong>Classification Level</strong>
+                    <span class="setting-desc">Banner text and color scheme</span>
+                </div>
+                <select class="form-input" @bind="_bannerLevel">
+                    <option value="UNCLASSIFIED">UNCLASSIFIED</option>
+                    <option value="CUI">CUI</option>
+                    <option value="CONFIDENTIAL">CONFIDENTIAL</option>
+                    <option value="SECRET">SECRET</option>
+                    <option value="TOP SECRET">TOP SECRET</option>
+                </select>
+            </div>
+            @if (_bannerEnabled)
+            {
+                <div class="banner-preview @GetBannerClass()">
+                    @_bannerLevel
+                </div>
+            }
+        </div>
+    </section>
+
+    @* ─── Agents ─── *@
+    <section class="admin-section">
+        <h4 class="section-heading">Agents</h4>
+        <div class="admin-card">
+            <table class="admin-table">
+                <thead>
+                    <tr>
+                        <th>Agent</th>
+                        <th>Type</th>
+                        <th>Description</th>
+                        <th>Enabled</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var agent in _agents)
+                    {
+                        <tr>
+                            <td class="agent-name-cell">
+                                <div class="agent-avatar-sm">@agent.Name[0]</div>
+                                @agent.Name
+                            </td>
+                            <td><code>@agent.Type</code></td>
+                            <td>@agent.Description</td>
+                            <td>
+                                <span class="status-badge @(agent.IsEnabled ? "status-active" : "status-inactive")">
+                                    @(agent.IsEnabled ? "Active" : "Disabled")
+                                </span>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </section>
+
+    @* ─── MCP Servers ─── *@
+    <section class="admin-section">
+        <h4 class="section-heading">MCP Servers</h4>
+        <div class="admin-card">
+            <table class="admin-table">
+                <thead>
+                    <tr>
+                        <th>Server</th>
+                        <th>Agent Binding</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var server in _mcpServers)
+                    {
+                        <tr>
+                            <td><strong>@server.Name</strong></td>
+                            <td><code>@server.AgentType</code></td>
+                            <td>
+                                <span class="status-badge @(server.IsHealthy ? "status-active" : "status-inactive")">
+                                    @(server.IsHealthy ? "Connected" : "Unavailable")
+                                </span>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+            <div class="card-footer">
+                <button class="btn-secondary" @onclick="RefreshMcpStatus">Refresh Status</button>
+            </div>
+        </div>
+    </section>
+</div>
+
+@code {
+    private List<AgentDefinition> _agents = [];
+    private List<McpServerStatus> _mcpServers = [];
+
+    private bool _darkMode;
+    private string _logoUrl = string.Empty;
+    private string _appTitle = "Smart Ops Hub";
+    private bool _bannerEnabled;
+    private string _bannerLevel = "UNCLASSIFIED";
+
+    protected override void OnInitialized()
+    {
+        _agents = AgentRegistry.GetAllAgents().ToList();
+        _mcpServers = Enum.GetValues<AgentType>().Select(t => new McpServerStatus
+        {
+            Name = $"SmartOpsHub.Mcp.{t}",
+            AgentType = t,
+            IsHealthy = false
+        }).ToList();
+    }
+
+    private void OnThemeChanged() { /* Will wire to CSS class on <html> */ }
+
+    private Task RefreshMcpStatus()
+    {
+        // TODO: Call IMcpGateway.GetHealthStatusAsync when wired
+        StateHasChanged();
+        return Task.CompletedTask;
+    }
+
+    private string GetBannerClass() => _bannerLevel switch
+    {
+        "UNCLASSIFIED" => "banner-unclassified",
+        "CUI" => "banner-cui",
+        "CONFIDENTIAL" => "banner-confidential",
+        "SECRET" => "banner-secret",
+        "TOP SECRET" => "banner-topsecret",
+        _ => "banner-unclassified"
+    };
+
+    private sealed class McpServerStatus
+    {
+        public string Name { get; set; } = string.Empty;
+        public AgentType AgentType { get; set; }
+        public bool IsHealthy { get; set; }
+    }
+}
+
+<style>
+    .admin-page {
+        max-width: 960px;
+        margin: 0 auto;
+        padding: 1.5rem 1rem;
+    }
+
+    .admin-title {
+        font-size: 1.5rem;
+        font-weight: 700;
+        margin-bottom: 1.5rem;
+        color: #1a1a2e;
+    }
+
+    .admin-section {
+        margin-bottom: 2rem;
+    }
+
+    .section-heading {
+        font-size: 1rem;
+        font-weight: 600;
+        color: #495057;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        margin-bottom: 0.75rem;
+        padding-bottom: 0.5rem;
+        border-bottom: 2px solid #e9ecef;
+    }
+
+    .admin-card {
+        background: #fff;
+        border: 1px solid #dee2e6;
+        border-radius: 0.75rem;
+        overflow: hidden;
+    }
+
+    .setting-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 1rem 1.25rem;
+        border-bottom: 1px solid #f1f3f5;
+    }
+
+    .setting-row:last-child {
+        border-bottom: none;
+    }
+
+    .setting-label {
+        display: flex;
+        flex-direction: column;
+        gap: 0.15rem;
+    }
+
+    .setting-desc {
+        font-size: 0.8rem;
+        color: #868e96;
+    }
+
+    .form-input {
+        padding: 0.4rem 0.75rem;
+        border: 1px solid #dee2e6;
+        border-radius: 0.5rem;
+        font-size: 0.85rem;
+        width: 280px;
+        outline: none;
+    }
+
+    .form-input:focus {
+        border-color: #0d6efd;
+        box-shadow: 0 0 0 2px rgba(13, 110, 253, 0.15);
+    }
+
+    /* Toggle switch */
+    .toggle-switch {
+        position: relative;
+        display: inline-block;
+        width: 48px;
+        height: 26px;
+    }
+
+    .toggle-switch input { opacity: 0; width: 0; height: 0; }
+
+    .toggle-slider {
+        position: absolute;
+        cursor: pointer;
+        inset: 0;
+        background: #ced4da;
+        border-radius: 26px;
+        transition: 0.3s;
+    }
+
+    .toggle-slider::before {
+        content: "";
+        position: absolute;
+        height: 20px;
+        width: 20px;
+        left: 3px;
+        bottom: 3px;
+        background: white;
+        border-radius: 50%;
+        transition: 0.3s;
+    }
+
+    .toggle-switch input:checked + .toggle-slider {
+        background: #0d6efd;
+    }
+
+    .toggle-switch input:checked + .toggle-slider::before {
+        transform: translateX(22px);
+    }
+
+    /* Admin table */
+    .admin-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 0.9rem;
+    }
+
+    .admin-table th {
+        text-align: left;
+        padding: 0.75rem 1.25rem;
+        background: #f8f9fa;
+        font-weight: 600;
+        font-size: 0.8rem;
+        color: #495057;
+        text-transform: uppercase;
+        letter-spacing: 0.03em;
+        border-bottom: 2px solid #dee2e6;
+    }
+
+    .admin-table td {
+        padding: 0.75rem 1.25rem;
+        border-bottom: 1px solid #f1f3f5;
+        vertical-align: middle;
+    }
+
+    .agent-name-cell {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        font-weight: 500;
+    }
+
+    .agent-avatar-sm {
+        width: 28px;
+        height: 28px;
+        border-radius: 50%;
+        background: #0d6efd;
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.75rem;
+        font-weight: 600;
+        flex-shrink: 0;
+    }
+
+    .status-badge {
+        display: inline-block;
+        padding: 0.2rem 0.6rem;
+        border-radius: 1rem;
+        font-size: 0.75rem;
+        font-weight: 600;
+    }
+
+    .status-active {
+        background: #d3f9d8;
+        color: #2b8a3e;
+    }
+
+    .status-inactive {
+        background: #ffe3e3;
+        color: #c92a2a;
+    }
+
+    .card-footer {
+        padding: 0.75rem 1.25rem;
+        background: #f8f9fa;
+        border-top: 1px solid #dee2e6;
+    }
+
+    .btn-secondary {
+        padding: 0.4rem 1rem;
+        background: #e9ecef;
+        border: 1px solid #dee2e6;
+        border-radius: 0.5rem;
+        font-size: 0.85rem;
+        cursor: pointer;
+        color: #495057;
+    }
+
+    .btn-secondary:hover {
+        background: #dee2e6;
+    }
+
+    /* Classification banners */
+    .banner-preview {
+        text-align: center;
+        padding: 0.4rem;
+        font-weight: 700;
+        font-size: 0.85rem;
+        letter-spacing: 0.1em;
+        margin: 0.75rem 1.25rem 1rem;
+        border-radius: 0.25rem;
+    }
+
+    .banner-unclassified { background: #2b8a3e; color: white; }
+    .banner-cui { background: #862e9c; color: white; }
+    .banner-confidential { background: #1864ab; color: white; }
+    .banner-secret { background: #c92a2a; color: white; }
+    .banner-topsecret { background: #e67700; color: white; }
+</style>

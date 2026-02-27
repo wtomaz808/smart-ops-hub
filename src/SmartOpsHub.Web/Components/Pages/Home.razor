@@ -1,28 +1,6 @@
-﻿@page "/"
+@page "/"
+@rendermode InteractiveServer
 
-<PageTitle>Home</PageTitle>
+<PageTitle>Smart Ops Hub — Workspace</PageTitle>
 
-<div class="container py-5">
-    <div class="text-center mb-5">
-        <h1 class="display-4 fw-bold">SmartOps Hub</h1>
-        <p class="lead text-muted">
-            Your multi-agent AI command center for DevOps, cloud, and development operations.
-        </p>
-    </div>
-
-    <div class="row justify-content-center mb-4">
-        <div class="col-lg-8">
-            <p>
-                SmartOps Hub provides a unified workspace where you can chat with multiple specialized AI agents
-                side by side. Each agent is an expert in a different domain&mdash;GitHub, Azure, DevOps, .NET development,
-                and more&mdash;so you can orchestrate complex workflows from a single dashboard.
-            </p>
-        </div>
-    </div>
-
-    <div class="text-center">
-        <a href="/workspace" class="btn btn-primary btn-lg">
-            Open Agent Workspace
-        </a>
-    </div>
-</div>
+<SmartOpsHub.Web.Components.Layout.AgentWorkspace />
