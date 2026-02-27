@@ -63,27 +63,54 @@ The flagship feature is a **multi-agent chat workspace** — a command-center UI
 
 ## Quick Start
 
-```bash
-# Clone the repository
-git clone <repo-url> && cd aiops
+### Option 1 — Startup script (recommended)
 
-# Restore and build
-dotnet restore
-dotnet build
+```powershell
+# Build and start both servers in separate windows
+.\start-local.ps1
 
-# Run with Docker Compose (starts Web, API, MCP Gateway, SQL Server)
-docker compose up --build
-
-# Run tests
-dotnet test
+# Or skip the build if you already compiled
+.\start-local.ps1 -NoBuild
 ```
+
+This opens two PowerShell windows (API + Web). Close them to stop the servers.
+
+### Option 2 — Manual (two terminals)
+
+**Terminal 1 — API:**
+```powershell
+cd src\SmartOpsHub.Api
+$env:ASPNETCORE_ENVIRONMENT="Development"
+dotnet run --urls http://localhost:5100
+```
+
+**Terminal 2 — Web:**
+```powershell
+cd src\SmartOpsHub.Web
+$env:ASPNETCORE_ENVIRONMENT="Development"
+dotnet run --urls http://localhost:5050
+```
+
+### Option 3 — Docker Compose
+
+```bash
+docker compose up --build
+```
+
+### Local URLs
 
 | Service | URL |
 |---|---|
-| Web (Blazor) | http://localhost:5000 |
-| API | http://localhost:5001 |
-| MCP Gateway | http://localhost:5002 |
-| SQL Server | localhost:1433 |
+| Web (Workspace) | http://localhost:5050 |
+| Admin | http://localhost:5050/admin |
+| API | http://localhost:5100 |
+| API Health | http://localhost:5100/health |
+
+### Run tests
+
+```bash
+dotnet test
+```
 
 For detailed setup instructions see [docs/getting-started.md](docs/getting-started.md).
 
