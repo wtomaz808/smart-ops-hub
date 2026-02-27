@@ -9,14 +9,14 @@ var builder = WebApplication.CreateBuilder(args);
 
 // Authentication (placeholder config – configure AzureAd section in appsettings when ready)
 var azureAdSection = builder.Configuration.GetSection("AzureAd");
-if (azureAdSection.Exists() && !string.IsNullOrEmpty(azureAdSection["ClientId"]))
+var authEnabled = azureAdSection.Exists() && !string.IsNullOrEmpty(azureAdSection["ClientId"]);
+if (authEnabled)
 {
     builder.Services.AddMicrosoftIdentityWebAppAuthentication(builder.Configuration);
     builder.Services.AddControllersWithViews()
         .AddMicrosoftIdentityUI();
+    builder.Services.AddAuthorization();
 }
-
-builder.Services.AddAuthorization();
 
 // Core services
 builder.Services.AddSingleton<IAgentRegistry, AgentRegistryService>();
@@ -44,8 +44,11 @@ if (!app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
-app.UseAuthentication();
-app.UseAuthorization();
+if (authEnabled)
+{
+    app.UseAuthentication();
+    app.UseAuthorization();
+}
 
 app.UseAntiforgery();
 

@@ -97,7 +97,7 @@ resource webApp 'Microsoft.App/containerApps@2024-03-01' = {
     configuration: {
       ingress: {
         external: true
-        targetPort: 3000
+        targetPort: 8080
         transport: 'http'
         allowInsecure: false
       }
@@ -126,13 +126,17 @@ resource webApp 'Microsoft.App/containerApps@2024-03-01' = {
               name: 'AZURE_KEYVAULT_URI'
               value: keyVaultUri
             }
+            {
+              name: 'ApiBaseUrl'
+              value: 'https://${projectName}-api.${containerAppsEnvironment.properties.defaultDomain}'
+            }
           ]
           probes: [
             {
               type: 'Liveness'
               httpGet: {
                 path: '/healthz'
-                port: 3000
+                port: 8080
               }
               initialDelaySeconds: 10
               periodSeconds: 30
@@ -141,7 +145,7 @@ resource webApp 'Microsoft.App/containerApps@2024-03-01' = {
               type: 'Readiness'
               httpGet: {
                 path: '/ready'
-                port: 3000
+                port: 8080
               }
               initialDelaySeconds: 5
               periodSeconds: 15
@@ -218,6 +222,10 @@ resource apiApp 'Microsoft.App/containerApps@2024-03-01' = {
               name: 'AZURE_AI_SERVICES_ENDPOINT'
               value: aiServicesEndpoint
             }
+            {
+              name: 'Cors__AllowedOrigins__0'
+              value: 'https://${projectName}-web.${containerAppsEnvironment.properties.defaultDomain}'
+            }
           ]
           probes: [
             {
@@ -265,7 +273,7 @@ resource mcpGatewayApp 'Microsoft.App/containerApps@2024-03-01' = {
     configuration: {
       ingress: {
         external: true
-        targetPort: 8090
+        targetPort: 8080
         transport: 'http'
         allowInsecure: false
       }
@@ -308,7 +316,7 @@ resource mcpGatewayApp 'Microsoft.App/containerApps@2024-03-01' = {
               type: 'Liveness'
               httpGet: {
                 path: '/healthz'
-                port: 8090
+                port: 8080
               }
               initialDelaySeconds: 10
               periodSeconds: 30
@@ -317,7 +325,7 @@ resource mcpGatewayApp 'Microsoft.App/containerApps@2024-03-01' = {
               type: 'Readiness'
               httpGet: {
                 path: '/ready'
-                port: 8090
+                port: 8080
               }
               initialDelaySeconds: 5
               periodSeconds: 15

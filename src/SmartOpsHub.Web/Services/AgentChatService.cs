@@ -1,18 +1,18 @@
-using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.SignalR.Client;
+using Microsoft.Extensions.Configuration;
 using SmartOpsHub.Core.Models;
 
 namespace SmartOpsHub.Web.Services;
 
 public sealed partial class AgentChatService : IAsyncDisposable
 {
-    private readonly NavigationManager _navigation;
+    private readonly IConfiguration _configuration;
     private readonly ILogger<AgentChatService> _logger;
     private readonly Dictionary<string, HubConnection> _connections = new();
 
-    public AgentChatService(NavigationManager navigation, ILogger<AgentChatService> logger)
+    public AgentChatService(IConfiguration configuration, ILogger<AgentChatService> logger)
     {
-        _navigation = navigation;
+        _configuration = configuration;
         _logger = logger;
     }
 
@@ -21,7 +21,8 @@ public sealed partial class AgentChatService : IAsyncDisposable
         if (_connections.ContainsKey(agentId))
             return;
 
-        var hubUrl = _navigation.ToAbsoluteUri($"/hubs/agent/{agentId}");
+        var apiBaseUrl = _configuration.GetValue("ApiBaseUrl", "http://localhost:5100")!.TrimEnd('/');
+        var hubUrl = $"{apiBaseUrl}/hubs/agent";
 
         var connection = new HubConnectionBuilder()
             .WithUrl(hubUrl)
