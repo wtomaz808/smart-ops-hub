@@ -21,11 +21,11 @@ public class AgentWorkspaceTests : IDisposable
     }
 
     [Fact]
-    public void AgentRegistry_Returns_Four_Agents()
+    public void AgentRegistry_Returns_Five_Agents()
     {
         var registry = new AgentRegistryService();
         var agents = registry.GetAllAgents();
-        Assert.Equal(4, agents.Count);
+        Assert.Equal(5, agents.Count);
     }
 
     [Fact]

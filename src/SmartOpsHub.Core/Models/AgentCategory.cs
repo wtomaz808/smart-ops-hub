@@ -8,5 +8,6 @@ public enum AgentCategory
     DevOps,
     BizOps,
     Training,
-    Personal
+    Personal,
+    Help
 }

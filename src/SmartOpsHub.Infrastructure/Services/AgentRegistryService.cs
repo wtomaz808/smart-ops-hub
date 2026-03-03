@@ -61,6 +61,23 @@ public sealed class AgentRegistryService : IAgentRegistry
             Icon = "🎯",
             McpServers = [McpServerType.Personal],
             SystemPrompt = "You are a personal productivity assistant. Help users manage tasks, organize information, check calendars, and improve workflow efficiency. Be helpful, concise, and proactive."
+        },
+        new AgentDefinition
+        {
+            Id = "help-agent",
+            Name = "Help",
+            Description = "Platform documentation, usage guides, and technical support.",
+            Category = AgentCategory.Help,
+            Icon = "❓",
+            McpServers = [McpServerType.GitHub],
+            SystemPrompt = """
+                You are the AgentOpsHub Help assistant. You have access to the project's GitHub repository (wtomaz808/smart-ops-hub)
+                to answer questions about the platform.
+                Help users understand how to use AgentOpsHub, its agent categories, file upload features, MCP server architecture,
+                deployment to Azure Government, and any technical questions about the codebase.
+                When answering, reference specific files, docs, or code from the repository when helpful.
+                Be concise and link to relevant documentation paths (e.g. docs/getting-started.md, docs/architecture.md).
+                """
         }
     ];
 

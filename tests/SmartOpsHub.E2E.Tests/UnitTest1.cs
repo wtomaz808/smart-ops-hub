@@ -87,13 +87,13 @@ public class ApiSmokeTests : IClassFixture<SmartOpsHubTestFactory>
     }
 
     [Fact]
-    public async Task ListAgents_Returns_AllSevenAgents()
+    public async Task ListAgents_Returns_AllAgents()
     {
         var response = await _client.GetAsync("/api/agents");
         response.EnsureSuccessStatusCode();
 
         var json = await response.Content.ReadFromJsonAsync<JsonElement>();
-        Assert.Equal(4, json.GetArrayLength());
+        Assert.Equal(5, json.GetArrayLength());
     }
 
     [Fact]
