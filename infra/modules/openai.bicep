@@ -1,4 +1,4 @@
-// Module: Azure OpenAI with gpt-4o deployment and managed identity access
+// Module: Azure OpenAI with gpt-4o and gpt-4.1 deployments and managed identity access
 
 @description('Azure region for resource deployment')
 param location string
@@ -20,6 +20,9 @@ param logAnalyticsWorkspaceId string
 
 @description('Capacity (in thousands of TPM) for gpt-4o deployment')
 param gpt4oCapacity int = 10
+
+@description('Capacity (in thousands of TPM) for gpt-4.1 deployment')
+param gpt41Capacity int = 10
 
 resource openAi 'Microsoft.CognitiveServices/accounts@2024-04-01-preview' = {
   name: openAiName
@@ -47,7 +50,25 @@ resource gpt4oDeployment 'Microsoft.CognitiveServices/accounts/deployments@2024-
     model: {
       format: 'OpenAI'
       name: 'gpt-4o'
-      version: '2024-08-06'
+      version: '2024-11-20'
+    }
+    raiPolicyName: 'Microsoft.DefaultV2'
+  }
+}
+
+resource gpt41Deployment 'Microsoft.CognitiveServices/accounts/deployments@2024-04-01-preview' = {
+  parent: openAi
+  name: 'gpt-41'
+  dependsOn: [gpt4oDeployment]
+  sku: {
+    name: 'Standard'
+    capacity: gpt41Capacity
+  }
+  properties: {
+    model: {
+      format: 'OpenAI'
+      name: 'gpt-4.1'
+      version: '2025-04-14'
     }
     raiPolicyName: 'Microsoft.DefaultV2'
   }

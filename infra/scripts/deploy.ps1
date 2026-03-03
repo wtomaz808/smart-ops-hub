@@ -15,7 +15,7 @@
     Preview changes without deploying.
 
 .PARAMETER Location
-    Azure region. Defaults to usgovvirginia.
+    Azure region. Defaults to usgovarizona.
 
 .PARAMETER ImageTag
     Container image tag. Defaults to 'latest'.
@@ -39,7 +39,7 @@ param(
 
     [switch]$WhatIf,
 
-    [string]$Location = 'usgovvirginia',
+    [string]$Location = 'usgovarizona',
 
     [string]$ImageTag = 'latest'
 )

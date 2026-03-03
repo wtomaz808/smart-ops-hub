@@ -32,11 +32,11 @@ internal sealed class TestMcpClient : IMcpClient
 internal sealed class TestAiCompletionService : IAiCompletionService
 {
     public Task<string> GetCompletionAsync(IReadOnlyList<ChatMessage> messages,
-        IReadOnlyList<McpToolDefinition>? availableTools = null, CancellationToken ct = default)
+        IReadOnlyList<McpToolDefinition>? availableTools = null, string? deploymentName = null, CancellationToken ct = default)
         => Task.FromResult("Test AI response");
 
     public async IAsyncEnumerable<string> StreamCompletionAsync(IReadOnlyList<ChatMessage> messages,
-        IReadOnlyList<McpToolDefinition>? availableTools = null, [EnumeratorCancellation] CancellationToken ct = default)
+        IReadOnlyList<McpToolDefinition>? availableTools = null, string? deploymentName = null, [EnumeratorCancellation] CancellationToken ct = default)
     {
         yield return "Test ";
         yield return "response";

@@ -20,7 +20,7 @@ public sealed partial class AgentHub(
         LogConnectionLeft(logger, Context.ConnectionId, sessionId);
     }
 
-    public async Task SendMessage(string sessionId, string message, List<FileAttachmentDto>? attachments = null)
+    public async Task SendMessage(string sessionId, string message, List<FileAttachmentDto>? attachments = null, string? model = null)
     {
         LogProcessingMessage(logger, sessionId);
 
@@ -53,7 +53,7 @@ public sealed partial class AgentHub(
 
         try
         {
-            await foreach (var token in orchestrator.StreamMessageAsync(sessionId, enrichedMessage, Context.ConnectionAborted))
+            await foreach (var token in orchestrator.StreamMessageAsync(sessionId, enrichedMessage, model, Context.ConnectionAborted))
             {
                 await Clients.Group(sessionId).SendAsync("ReceiveStreamToken", token, Context.ConnectionAborted);
             }

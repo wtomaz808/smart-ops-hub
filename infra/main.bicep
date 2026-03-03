@@ -6,8 +6,8 @@ targetScope = 'resourceGroup'
 @description('Name of the deployment environment (e.g., dev, staging, prod)')
 param environmentName string
 
-@description('Azure region for all resources — defaults to Azure Government Virginia')
-param location string = 'usgovvirginia'
+@description('Azure region for all resources — defaults to Azure Government Arizona')
+param location string = 'usgovarizona'
 
 @description('Project name used as a base for resource naming')
 param projectName string = 'smart-ops-hub'
@@ -28,6 +28,9 @@ param logRetentionDays int = 90
 
 @description('TPM capacity (thousands) for GPT-4o deployment')
 param gpt4oCapacity int = 10
+
+@description('TPM capacity (thousands) for GPT-4.1 deployment')
+param gpt41Capacity int = 10
 
 // ─── Variables ──────────────────────────────────────────────────────────────────
 
@@ -129,6 +132,7 @@ module openai 'modules/openai.bicep' = {
     principalId: identity.outputs.principalId
     logAnalyticsWorkspaceId: monitoring.outputs.logAnalyticsWorkspaceId
     gpt4oCapacity: gpt4oCapacity
+    gpt41Capacity: gpt41Capacity
   }
 }
 

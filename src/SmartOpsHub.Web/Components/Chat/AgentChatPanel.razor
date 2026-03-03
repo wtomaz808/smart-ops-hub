@@ -63,6 +63,12 @@
             <InputFile OnChange="HandleFileSelected" multiple style="display:none"
                        accept=".cs,.json,.md,.yaml,.yml,.xml,.txt,.bicep,.csproj,.sln,.ps1,.sh,.py,.js,.ts,.html,.css,.razor,.config,.props,.targets,.dockerfile,.tf,.env,.gitignore,.editorconfig,.csv,.log,.sql,.http,.png,.jpg,.jpeg,.gif,.svg,.pdf" />
         </label>
+        <select class="model-selector" @bind="_selectedModel" title="Select AI model">
+            @foreach (var model in ModelOption.All)
+            {
+                <option value="@model.DeploymentName">@model.DisplayName</option>
+            }
+        </select>
         <input type="text"
                @bind="_inputMessage"
                @bind:event="oninput"
@@ -86,6 +92,7 @@
     private string _inputMessage = string.Empty;
     private string _streamingContent = string.Empty;
     private bool _isStreaming;
+    private string _selectedModel = ModelOption.Default.DeploymentName;
     private ElementReference _messagesContainer;
     private IDisposable? _messageSubscription;
     private IDisposable? _streamTokenSubscription;
@@ -163,7 +170,7 @@
         _attachments.Clear();
 
         _status = AgentSessionStatus.Thinking;
-        await ChatService.SendMessageAsync(Agent.Id, messageText, attachments);
+        await ChatService.SendMessageAsync(Agent.Id, messageText, attachments, _selectedModel);
     }
 
     private async Task HandleFileSelected(InputFileChangeEventArgs e)
@@ -350,6 +357,24 @@
 
     .file-upload-btn:hover {
         background: #e9ecef;
+    }
+
+    .model-selector {
+        padding: 0.35rem 0.5rem;
+        border: 1px solid #dee2e6;
+        border-radius: 0.5rem;
+        font-size: 0.75rem;
+        background: #fff;
+        color: #495057;
+        cursor: pointer;
+        flex-shrink: 0;
+        max-width: 160px;
+    }
+
+    .model-selector:focus {
+        border-color: #0d6efd;
+        outline: none;
+        box-shadow: 0 0 0 0.15rem rgba(13, 110, 253, 0.15);
     }
 
     .attachment-bar {

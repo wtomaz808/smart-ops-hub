@@ -60,7 +60,7 @@ public sealed partial class AgentChatService : IAsyncDisposable
         }
     }
 
-    public async Task SendMessageAsync(string agentId, string message, List<FileAttachment>? attachments = null)
+    public async Task SendMessageAsync(string agentId, string message, List<FileAttachment>? attachments = null, string? model = null)
     {
         if (_connections.TryGetValue(agentId, out var connection) &&
             connection.State == HubConnectionState.Connected)
@@ -74,7 +74,7 @@ public sealed partial class AgentChatService : IAsyncDisposable
                 a.Base64Data
             }).ToList();
 
-            await connection.SendAsync("SendMessage", agentId, message, fileData);
+            await connection.SendAsync("SendMessage", agentId, message, fileData, model);
         }
     }
 

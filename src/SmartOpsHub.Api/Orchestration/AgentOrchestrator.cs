@@ -68,6 +68,7 @@ public sealed partial class AgentOrchestrator(
             var responseText = await aiCompletionService.GetCompletionAsync(
                 session.ConversationHistory,
                 tools,
+                null,
                 cancellationToken).ConfigureAwait(false);
 
             var assistantMessage = new ChatMessage
@@ -98,6 +99,7 @@ public sealed partial class AgentOrchestrator(
     public async IAsyncEnumerable<string> StreamMessageAsync(
         string sessionId,
         string userMessage,
+        string? deploymentName = null,
         [EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
         var session = await GetRequiredSessionAsync(sessionId, cancellationToken).ConfigureAwait(false);
@@ -115,7 +117,7 @@ public sealed partial class AgentOrchestrator(
 
         var fullResponse = new StringBuilder();
         await foreach (var token in aiCompletionService.StreamCompletionAsync(
-            session.ConversationHistory, tools, cancellationToken).ConfigureAwait(false))
+            session.ConversationHistory, tools, deploymentName, cancellationToken).ConfigureAwait(false))
         {
             fullResponse.Append(token);
             yield return token;

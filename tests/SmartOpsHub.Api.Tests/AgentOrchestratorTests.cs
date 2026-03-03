@@ -27,14 +27,14 @@ internal sealed class FakeAiCompletionService : IAiCompletionService
     public bool ShouldThrow { get; set; }
 
     public Task<string> GetCompletionAsync(IReadOnlyList<ChatMessage> messages,
-        IReadOnlyList<McpToolDefinition>? availableTools = null, CancellationToken cancellationToken = default)
+        IReadOnlyList<McpToolDefinition>? availableTools = null, string? deploymentName = null, CancellationToken cancellationToken = default)
     {
         if (ShouldThrow) throw new InvalidOperationException("AI service unavailable");
         return Task.FromResult(NextResponse);
     }
 
     public async IAsyncEnumerable<string> StreamCompletionAsync(IReadOnlyList<ChatMessage> messages,
-        IReadOnlyList<McpToolDefinition>? availableTools = null, [EnumeratorCancellation] CancellationToken cancellationToken = default)
+        IReadOnlyList<McpToolDefinition>? availableTools = null, string? deploymentName = null, [EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
         if (ShouldThrow) throw new InvalidOperationException("AI service unavailable");
         foreach (var word in NextResponse.Split(' '))

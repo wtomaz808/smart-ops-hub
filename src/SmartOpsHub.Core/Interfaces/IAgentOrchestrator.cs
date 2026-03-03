@@ -10,6 +10,7 @@ public interface IAgentOrchestrator
     IAsyncEnumerable<string> StreamMessageAsync(
         string sessionId,
         string userMessage,
+        string? deploymentName = null,
         CancellationToken cancellationToken = default);
 
     Task<AgentSession?> GetSessionAsync(string sessionId, CancellationToken cancellationToken = default);

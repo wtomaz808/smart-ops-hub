@@ -179,7 +179,7 @@ jobs:
           ENV=${{ steps.env.outputs.environment }}
           az group create \
             --name ${{ env.PROJECT_NAME }}-${ENV}-rg \
-            --location usgovvirginia \
+            --location usgovarizona \
             --tags environment=${ENV} project=${{ env.PROJECT_NAME }} managedBy=bicep
 
       - name: Deploy Bicep

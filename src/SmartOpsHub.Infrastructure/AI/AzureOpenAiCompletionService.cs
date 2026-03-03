@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using System.Runtime.CompilerServices;
 using Azure.AI.OpenAI;
 using Azure.Identity;
@@ -11,29 +12,32 @@ namespace SmartOpsHub.Infrastructure.AI;
 
 public sealed class AzureOpenAiCompletionService : IAiCompletionService
 {
-    private readonly ChatClient _chatClient;
+    private readonly AzureOpenAIClient _openAiClient;
+    private readonly string _defaultDeployment;
+    private readonly ConcurrentDictionary<string, ChatClient> _chatClients = new();
 
     public AzureOpenAiCompletionService(IConfiguration configuration)
     {
         var endpoint = configuration["AzureOpenAI:Endpoint"]
             ?? throw new InvalidOperationException("AzureOpenAI:Endpoint configuration is required.");
-        var deploymentName = configuration["AzureOpenAI:DeploymentName"]
-            ?? throw new InvalidOperationException("AzureOpenAI:DeploymentName configuration is required.");
+        _defaultDeployment = configuration["AzureOpenAI:DeploymentName"]
+            ?? ModelOption.Default.DeploymentName;
 
         var credential = new DefaultAzureCredential();
-        var client = new AzureOpenAIClient(new Uri(endpoint), credential);
-        _chatClient = client.GetChatClient(deploymentName);
+        _openAiClient = new AzureOpenAIClient(new Uri(endpoint), credential);
     }
 
     public async Task<string> GetCompletionAsync(
         IReadOnlyList<ChatMessage> messages,
         IReadOnlyList<McpToolDefinition>? availableTools = null,
+        string? deploymentName = null,
         CancellationToken cancellationToken = default)
     {
+        var client = GetChatClient(deploymentName);
         var chatMessages = MapMessages(messages);
         var options = BuildOptions(availableTools);
 
-        ChatCompletion completion = await _chatClient.CompleteChatAsync(chatMessages, options, cancellationToken);
+        ChatCompletion completion = await client.CompleteChatAsync(chatMessages, options, cancellationToken);
 
         return completion.Content[0].Text ?? string.Empty;
     }
@@ -41,12 +45,14 @@ public sealed class AzureOpenAiCompletionService : IAiCompletionService
     public async IAsyncEnumerable<string> StreamCompletionAsync(
         IReadOnlyList<ChatMessage> messages,
         IReadOnlyList<McpToolDefinition>? availableTools = null,
+        string? deploymentName = null,
         [EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
+        var client = GetChatClient(deploymentName);
         var chatMessages = MapMessages(messages);
         var options = BuildOptions(availableTools);
 
-        await foreach (StreamingChatCompletionUpdate update in _chatClient.CompleteChatStreamingAsync(chatMessages, options, cancellationToken))
+        await foreach (StreamingChatCompletionUpdate update in client.CompleteChatStreamingAsync(chatMessages, options, cancellationToken))
         {
             foreach (ChatMessageContentPart part in update.ContentUpdate)
             {
@@ -56,6 +62,12 @@ public sealed class AzureOpenAiCompletionService : IAiCompletionService
                 }
             }
         }
+    }
+
+    private ChatClient GetChatClient(string? deploymentName)
+    {
+        var deployment = deploymentName ?? _defaultDeployment;
+        return _chatClients.GetOrAdd(deployment, d => _openAiClient.GetChatClient(d));
     }
 
     private static List<OpenAI.Chat.ChatMessage> MapMessages(IReadOnlyList<ChatMessage> messages)
