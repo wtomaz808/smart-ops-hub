@@ -1,6 +1,6 @@
 <#
 .SYNOPSIS
-    Starts the Smart Ops Hub locally for development.
+    Starts the AgentOpsHub locally for development.
 
 .DESCRIPTION
     Two modes:
@@ -35,7 +35,7 @@ if ($Down) {
 
 # --- Docker mode ---
 if ($Docker) {
-    Write-Host "Starting Smart Ops Hub via Docker Compose..." -ForegroundColor Cyan
+    Write-Host "Starting AgentOpsHub via Docker Compose..." -ForegroundColor Cyan
 
     $composeArgs = @("-f", "$root\docker-compose.yml", "up", "-d")
     if ($Build) { $composeArgs += "--build" }

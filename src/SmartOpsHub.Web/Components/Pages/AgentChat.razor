@@ -1,0 +1,55 @@
+@page "/agent/{CategoryName}"
+@rendermode InteractiveServer
+@using SmartOpsHub.Core.Interfaces
+@using SmartOpsHub.Core.Models
+@inject IAgentRegistry AgentRegistry
+
+<PageTitle>@(_agent?.Name ?? "Agent") — AgentOpsHub</PageTitle>
+
+@if (_agent is not null)
+{
+    <SmartOpsHub.Web.Components.Chat.AgentChatPanel Agent="@_agent" />
+}
+else
+{
+    <div class="agent-not-found">
+        <h2>Agent not found</h2>
+        <p>No agent matches the category "@CategoryName".</p>
+    </div>
+}
+
+@code {
+    [Parameter]
+    public string CategoryName { get; set; } = string.Empty;
+
+    private AgentDefinition? _agent;
+
+    protected override void OnParametersSet()
+    {
+        if (Enum.TryParse<AgentCategory>(CategoryName, ignoreCase: true, out var category))
+        {
+            _agent = AgentRegistry.GetAgent(category);
+        }
+        else
+        {
+            _agent = null;
+        }
+    }
+}
+
+<style>
+    .agent-not-found {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        height: 60vh;
+        color: #6c757d;
+        text-align: center;
+    }
+
+    .agent-not-found h2 {
+        color: #343a40;
+        margin-bottom: 0.5rem;
+    }
+</style>

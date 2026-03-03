@@ -1,6 +1,10 @@
+@using SmartOpsHub.Core.Interfaces
+@using SmartOpsHub.Core.Models
+@inject IAgentRegistry AgentRegistry
+
 <div class="top-row ps-3 navbar navbar-dark">
     <div class="container-fluid">
-        <a class="navbar-brand" href="">Smart Ops Hub</a>
+        <a class="navbar-brand" href="">AgentOpsHub</a>
     </div>
 </div>
 
@@ -8,11 +12,26 @@
 
 <div class="nav-scrollable" onclick="document.querySelector('.navbar-toggler').click()">
     <nav class="nav flex-column">
+        <div class="nav-item px-3 nav-section-header">
+            <span>AgentHub</span>
+        </div>
+
+        @foreach (var agent in _agents)
+        {
+            <div class="nav-item px-3">
+                <NavLink class="nav-link agent-nav-link" href="@($"agent/{agent.Category.ToString().ToLowerInvariant()}")" Match="NavLinkMatch.All">
+                    <span class="agent-nav-icon">@agent.Icon</span> @agent.Name
+                </NavLink>
+            </div>
+        }
+
         <div class="nav-item px-3">
-            <NavLink class="nav-link" href="" Match="NavLinkMatch.All">
-                <span class="bi bi-house-door-fill-nav-menu" aria-hidden="true"></span> Workspace
+            <NavLink class="nav-link add-agent-link" href="agent/new">
+                <span class="agent-nav-icon">➕</span> Add Agent
             </NavLink>
         </div>
+
+        <div class="nav-item px-3 nav-divider"></div>
 
         <div class="nav-item px-3">
             <NavLink class="nav-link" href="admin">
@@ -21,4 +40,56 @@
         </div>
     </nav>
 </div>
+
+@code {
+    private IReadOnlyList<AgentDefinition> _agents = [];
+
+    protected override void OnInitialized()
+    {
+        _agents = AgentRegistry.GetAllAgents()
+            .Where(a => a.IsEnabled)
+            .ToList();
+    }
+}
+
+<style>
+    .nav-section-header {
+        padding-top: 0.75rem !important;
+        padding-bottom: 0.25rem !important;
+    }
+
+    .nav-section-header span {
+        font-size: 0.7rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: rgba(255, 255, 255, 0.4);
+    }
+
+    .agent-nav-link {
+        display: flex !important;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .agent-nav-icon {
+        font-size: 1.1rem;
+        width: 22px;
+        text-align: center;
+        flex-shrink: 0;
+    }
+
+    .add-agent-link {
+        opacity: 0.6;
+    }
+
+    .add-agent-link:hover {
+        opacity: 1;
+    }
+
+    .nav-divider {
+        border-top: 1px solid rgba(255, 255, 255, 0.1);
+        margin: 0.5rem 0;
+    }
+</style>
 

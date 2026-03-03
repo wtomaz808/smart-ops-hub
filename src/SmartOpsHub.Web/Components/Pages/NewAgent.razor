@@ -1,0 +1,204 @@
+@page "/agent/new"
+@rendermode InteractiveServer
+@using SmartOpsHub.Core.Models
+
+<PageTitle>New Agent — AgentOpsHub</PageTitle>
+
+<div class="new-agent-page">
+    <h2 class="new-agent-title">Create New Agent</h2>
+
+    <div class="new-agent-card">
+        <div class="form-group">
+            <label>Name</label>
+            <input type="text" class="form-input" @bind="_name" placeholder="e.g. Security Ops" />
+        </div>
+
+        <div class="form-group">
+            <label>Icon (emoji)</label>
+            <input type="text" class="form-input form-input-sm" @bind="_icon" placeholder="e.g. 🔒" maxlength="4" />
+        </div>
+
+        <div class="form-group">
+            <label>Description</label>
+            <input type="text" class="form-input" @bind="_description" placeholder="What does this agent help with?" />
+        </div>
+
+        <div class="form-group">
+            <label>System Prompt</label>
+            <textarea class="form-textarea" @bind="_systemPrompt" rows="6"
+                      placeholder="You are a ... assistant. Help users with ..."></textarea>
+        </div>
+
+        <div class="form-group">
+            <label>MCP Servers</label>
+            <div class="mcp-checkboxes">
+                @foreach (var server in Enum.GetValues<McpServerType>())
+                {
+                    <label class="mcp-check">
+                        <input type="checkbox" checked="@_selectedServers.Contains(server)"
+                               @onchange="(e) => ToggleServer(server, (bool)(e.Value ?? false))" />
+                        @server
+                    </label>
+                }
+            </div>
+        </div>
+
+        <div class="form-actions">
+            <button class="btn-primary" @onclick="CreateAgent" disabled="@(string.IsNullOrWhiteSpace(_name))">
+                Create Agent
+            </button>
+            <a href="/" class="btn-secondary">Cancel</a>
+        </div>
+
+        @if (_created)
+        {
+            <div class="success-message">
+                ✅ Agent "@_name" created! It will appear in the sidebar after a page refresh.
+            </div>
+        }
+    </div>
+</div>
+
+@code {
+    private string _name = string.Empty;
+    private string _icon = "🤖";
+    private string _description = string.Empty;
+    private string _systemPrompt = string.Empty;
+    private readonly HashSet<McpServerType> _selectedServers = [];
+    private bool _created;
+
+    private void ToggleServer(McpServerType server, bool selected)
+    {
+        if (selected) _selectedServers.Add(server);
+        else _selectedServers.Remove(server);
+    }
+
+    private void CreateAgent()
+    {
+        if (string.IsNullOrWhiteSpace(_name)) return;
+
+        // TODO: Wire to a persistent agent store (DB or config)
+        // For now, this demonstrates the UI and collects the data.
+        // The AgentRegistryService would need to support dynamic agents.
+        _created = true;
+    }
+}
+
+<style>
+    .new-agent-page {
+        max-width: 640px;
+        margin: 0 auto;
+        padding: 2rem 1rem;
+    }
+
+    .new-agent-title {
+        font-size: 1.5rem;
+        font-weight: 700;
+        margin-bottom: 1.5rem;
+        color: #1a1a2e;
+    }
+
+    .new-agent-card {
+        background: #fff;
+        border: 1px solid #dee2e6;
+        border-radius: 0.75rem;
+        padding: 1.5rem;
+    }
+
+    .form-group {
+        margin-bottom: 1.25rem;
+    }
+
+    .form-group label {
+        display: block;
+        font-weight: 600;
+        font-size: 0.85rem;
+        color: #495057;
+        margin-bottom: 0.35rem;
+    }
+
+    .form-input {
+        width: 100%;
+        padding: 0.5rem 0.75rem;
+        border: 1px solid #dee2e6;
+        border-radius: 0.5rem;
+        font-size: 0.9rem;
+        outline: none;
+    }
+
+    .form-input:focus, .form-textarea:focus {
+        border-color: #0d6efd;
+        box-shadow: 0 0 0 2px rgba(13, 110, 253, 0.15);
+    }
+
+    .form-input-sm {
+        width: 80px;
+    }
+
+    .form-textarea {
+        width: 100%;
+        padding: 0.5rem 0.75rem;
+        border: 1px solid #dee2e6;
+        border-radius: 0.5rem;
+        font-size: 0.85rem;
+        font-family: monospace;
+        outline: none;
+        resize: vertical;
+    }
+
+    .mcp-checkboxes {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.75rem;
+    }
+
+    .mcp-check {
+        display: flex;
+        align-items: center;
+        gap: 0.3rem;
+        font-size: 0.85rem;
+        cursor: pointer;
+    }
+
+    .form-actions {
+        display: flex;
+        gap: 0.75rem;
+        margin-top: 1.5rem;
+    }
+
+    .btn-primary {
+        padding: 0.5rem 1.5rem;
+        background: #0d6efd;
+        color: white;
+        border: none;
+        border-radius: 0.5rem;
+        font-size: 0.9rem;
+        cursor: pointer;
+    }
+
+    .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+    .btn-primary:hover:not(:disabled) { background: #0b5ed7; }
+
+    .btn-secondary {
+        padding: 0.5rem 1.5rem;
+        background: #e9ecef;
+        color: #495057;
+        border: 1px solid #dee2e6;
+        border-radius: 0.5rem;
+        font-size: 0.9rem;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+    }
+
+    .btn-secondary:hover { background: #dee2e6; }
+
+    .success-message {
+        margin-top: 1rem;
+        padding: 0.75rem 1rem;
+        background: #d3f9d8;
+        color: #2b8a3e;
+        border-radius: 0.5rem;
+        font-size: 0.9rem;
+    }
+</style>

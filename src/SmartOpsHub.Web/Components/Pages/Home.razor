@@ -1,6 +1,22 @@
 @page "/"
 @rendermode InteractiveServer
+@using SmartOpsHub.Core.Interfaces
+@using SmartOpsHub.Core.Models
+@inject IAgentRegistry AgentRegistry
 
-<PageTitle>Smart Ops Hub — Workspace</PageTitle>
+<PageTitle>AgentOpsHub — AgentHub</PageTitle>
 
-<SmartOpsHub.Web.Components.Layout.AgentWorkspace />
+@if (_defaultAgent is not null)
+{
+    <SmartOpsHub.Web.Components.Chat.AgentChatPanel Agent="@_defaultAgent" />
+}
+
+@code {
+    private AgentDefinition? _defaultAgent;
+
+    protected override void OnInitialized()
+    {
+        _defaultAgent = AgentRegistry.GetAllAgents()
+            .FirstOrDefault(a => a.IsEnabled && !a.IsComingSoon);
+    }
+}

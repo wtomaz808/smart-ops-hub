@@ -4,7 +4,7 @@
 @using SmartOpsHub.Core.Models
 @inject IAgentRegistry AgentRegistry
 
-<PageTitle>Admin — Smart Ops Hub</PageTitle>
+<PageTitle>Admin — AgentOpsHub</PageTitle>
 
 <div class="admin-page">
     <h2 class="admin-title">Settings &amp; Administration</h2>
@@ -35,7 +35,7 @@
                     <strong>Application Title</strong>
                     <span class="setting-desc">Displayed in the sidebar and browser tab</span>
                 </div>
-                <input type="text" class="form-input" @bind="_appTitle" placeholder="Smart Ops Hub" />
+                <input type="text" class="form-input" @bind="_appTitle" placeholder="AgentOpsHub" />
             </div>
         </div>
     </section>
@@ -151,7 +151,7 @@
 
     private bool _darkMode;
     private string _logoUrl = string.Empty;
-    private string _appTitle = "Smart Ops Hub";
+    private string _appTitle = "AgentOpsHub";
     private bool _bannerEnabled;
     private string _bannerLevel = "UNCLASSIFIED";
 

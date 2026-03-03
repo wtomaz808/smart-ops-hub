@@ -1,4 +1,4 @@
-# Smart Ops Hub
+# AgentOpsHub
 
 > AI-enabled operations platform for Azure Government — a multi-agent chat workspace where DevOps teams collaborate with specialized AI agents in real time.
 
@@ -8,7 +8,7 @@
 
 ## Overview
 
-Smart Ops Hub is a cloud-native operations platform deployed to **Azure Government**. It brings together AI agents, MCP (Model Context Protocol) servers, and a Blazor Server frontend into a unified command center for infrastructure operations, DevOps workflows, and AI-assisted development.
+AgentOpsHub is a cloud-native operations platform deployed to **Azure Government**. It brings together AI agents, MCP (Model Context Protocol) servers, and a Blazor Server frontend into a unified command center for infrastructure operations, DevOps workflows, and AI-assisted development.
 
 ### Multi-Agent Chat Workspace
 
