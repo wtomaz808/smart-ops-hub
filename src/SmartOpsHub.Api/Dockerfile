@@ -1,9 +1,7 @@
 FROM mcr.microsoft.com/dotnet/sdk:9.0 AS build
-WORKDIR /src
+WORKDIR /repo
 
-COPY Directory.Build.props ./
-COPY global.json ./
-COPY smart-ops-hub.sln ./
+COPY Directory.Build.props global.json ./
 COPY src/SmartOpsHub.Core/SmartOpsHub.Core.csproj src/SmartOpsHub.Core/
 COPY src/SmartOpsHub.Infrastructure/SmartOpsHub.Infrastructure.csproj src/SmartOpsHub.Infrastructure/
 COPY src/SmartOpsHub.Api/SmartOpsHub.Api.csproj src/SmartOpsHub.Api/
@@ -12,8 +10,7 @@ RUN dotnet restore src/SmartOpsHub.Api/SmartOpsHub.Api.csproj
 COPY src/SmartOpsHub.Core/ src/SmartOpsHub.Core/
 COPY src/SmartOpsHub.Infrastructure/ src/SmartOpsHub.Infrastructure/
 COPY src/SmartOpsHub.Api/ src/SmartOpsHub.Api/
-RUN dotnet build src/SmartOpsHub.Api/SmartOpsHub.Api.csproj -c Release --no-restore
-RUN dotnet publish src/SmartOpsHub.Api/SmartOpsHub.Api.csproj -c Release --no-build -o /app/publish
+RUN dotnet publish src/SmartOpsHub.Api/SmartOpsHub.Api.csproj -c Release -o /app/publish
 
 FROM mcr.microsoft.com/dotnet/aspnet:9.0 AS runtime
 WORKDIR /app

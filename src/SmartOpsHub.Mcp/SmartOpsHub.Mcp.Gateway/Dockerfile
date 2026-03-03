@@ -1,8 +1,7 @@
 FROM mcr.microsoft.com/dotnet/sdk:9.0 AS build
-WORKDIR /src
+WORKDIR /repo
 
-COPY Directory.Build.props ./
-COPY global.json ./
+COPY Directory.Build.props global.json ./
 COPY src/SmartOpsHub.Core/SmartOpsHub.Core.csproj src/SmartOpsHub.Core/
 COPY src/SmartOpsHub.Mcp/SmartOpsHub.Mcp.GitHub/SmartOpsHub.Mcp.GitHub.csproj src/SmartOpsHub.Mcp/SmartOpsHub.Mcp.GitHub/
 COPY src/SmartOpsHub.Mcp/SmartOpsHub.Mcp.Azure/SmartOpsHub.Mcp.Azure.csproj src/SmartOpsHub.Mcp/SmartOpsHub.Mcp.Azure/
@@ -16,8 +15,7 @@ RUN dotnet restore src/SmartOpsHub.Mcp/SmartOpsHub.Mcp.Gateway/SmartOpsHub.Mcp.G
 
 COPY src/SmartOpsHub.Core/ src/SmartOpsHub.Core/
 COPY src/SmartOpsHub.Mcp/ src/SmartOpsHub.Mcp/
-RUN dotnet build src/SmartOpsHub.Mcp/SmartOpsHub.Mcp.Gateway/SmartOpsHub.Mcp.Gateway.csproj -c Release --no-restore
-RUN dotnet publish src/SmartOpsHub.Mcp/SmartOpsHub.Mcp.Gateway/SmartOpsHub.Mcp.Gateway.csproj -c Release --no-build -o /app/publish
+RUN dotnet publish src/SmartOpsHub.Mcp/SmartOpsHub.Mcp.Gateway/SmartOpsHub.Mcp.Gateway.csproj -c Release -o /app/publish
 
 FROM mcr.microsoft.com/dotnet/aspnet:9.0 AS runtime
 WORKDIR /app
