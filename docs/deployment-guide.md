@@ -76,7 +76,7 @@ az ad app federated-credential create --id <APP_OBJECT_ID> --parameters '{
 |----------|-------|-------------|
 | `ACR_NAME` | `acrsmartopshubdev` | Azure Container Registry name (no hyphens) |
 | `ACR_LOGIN_SERVER` | `acrsmartopshubdev.azurecr.us` | ACR login server (`.azurecr.us` for Gov) |
-| `AZURE_RESOURCE_GROUP` | `smart-ops-hub-dev-rg` | Resource group for container deployments |
+| `AZURE_RESOURCE_GROUP` | `rg-AgentOpsHub-dev` | Resource group for container deployments |
 | `API_CONTAINER_APP_NAME` | `smart-ops-hub-dev-api` | API Container App name |
 | `WEB_CONTAINER_APP_NAME` | `smart-ops-hub-dev-web` | Web Container App name |
 | `GATEWAY_CONTAINER_APP_NAME` | `smart-ops-hub-dev-mcp-gateway` | MCP Gateway Container App name |

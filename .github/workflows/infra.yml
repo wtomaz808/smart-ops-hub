@@ -68,7 +68,7 @@ jobs:
       - name: Validate Bicep (dev)
         run: |
           az deployment group validate \
-            --resource-group ${{ env.PROJECT_NAME }}-dev-rg \
+            --resource-group rg-AgentOpsHub-dev \
             --template-file infra/main.bicep \
             --parameters infra/parameters/dev.bicepparam
 
@@ -76,7 +76,7 @@ jobs:
         if: github.event_name == 'pull_request'
         run: |
           az deployment group validate \
-            --resource-group ${{ env.PROJECT_NAME }}-prod-rg \
+            --resource-group rg-AgentOpsHub-prod \
             --template-file infra/main.bicep \
             --parameters infra/parameters/prod.bicepparam
 
@@ -112,7 +112,7 @@ jobs:
         run: |
           ENV=${{ steps.env.outputs.environment }}
           RESULT=$(az deployment group what-if \
-            --resource-group ${{ env.PROJECT_NAME }}-${ENV}-rg \
+            --resource-group rg-AgentOpsHub-${ENV} \
             --template-file infra/main.bicep \
             --parameters infra/parameters/${ENV}.bicepparam \
             --no-pretty-print 2>&1) || true
@@ -178,7 +178,7 @@ jobs:
         run: |
           ENV=${{ steps.env.outputs.environment }}
           az group create \
-            --name ${{ env.PROJECT_NAME }}-${ENV}-rg \
+            --name rg-AgentOpsHub-${ENV} \
             --location usgovarizona \
             --tags environment=${ENV} project=${{ env.PROJECT_NAME }} managedBy=bicep
 
@@ -187,7 +187,7 @@ jobs:
         run: |
           ENV=${{ steps.env.outputs.environment }}
           az deployment group create \
-            --resource-group ${{ env.PROJECT_NAME }}-${ENV}-rg \
+            --resource-group rg-AgentOpsHub-${ENV} \
             --template-file infra/main.bicep \
             --parameters infra/parameters/${ENV}.bicepparam \
             --parameters imageTag=${{ github.sha }} \

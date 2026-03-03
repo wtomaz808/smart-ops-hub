@@ -52,7 +52,7 @@ param(
 $ErrorActionPreference = 'Stop'
 
 $ProjectName = 'smart-ops-hub'
-$ResourceGroup = "$ProjectName-$Environment-rg"
+$ResourceGroup = "rg-AgentOpsHub-$Environment"
 $TenantId = 'd14ab12e-c535-4865-a593-c4115e7de102'
 $ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 $InfraDir = Split-Path -Parent $ScriptDir
