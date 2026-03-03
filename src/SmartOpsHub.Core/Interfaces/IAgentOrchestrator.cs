@@ -4,7 +4,7 @@ namespace SmartOpsHub.Core.Interfaces;
 
 public interface IAgentOrchestrator
 {
-    Task<AgentSession> CreateSessionAsync(string userId, AgentType agentType, CancellationToken cancellationToken = default);
+    Task<AgentSession> CreateSessionAsync(string userId, AgentCategory agentCategory, CancellationToken cancellationToken = default);
     Task<ChatMessage> ProcessMessageAsync(string sessionId, string userMessage, CancellationToken cancellationToken = default);
 
     IAsyncEnumerable<string> StreamMessageAsync(

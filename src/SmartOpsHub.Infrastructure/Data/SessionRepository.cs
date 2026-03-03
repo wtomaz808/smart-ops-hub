@@ -40,7 +40,7 @@ public sealed class SessionRepository(SmartOpsHubDbContext dbContext, IAgentRegi
             {
                 SessionId = session.SessionId,
                 UserId = session.UserId,
-                AgentType = session.AgentType.ToString(),
+                AgentType = session.AgentCategory.ToString(),
                 AgentName = session.Agent.Name,
                 SystemPrompt = session.Agent.SystemPrompt,
                 Status = session.Status.ToString(),
@@ -91,12 +91,12 @@ public sealed class SessionRepository(SmartOpsHubDbContext dbContext, IAgentRegi
 
     private AgentSession ToAgentSession(SessionEntity entity)
     {
-        var agentType = Enum.Parse<AgentType>(entity.AgentType);
-        var agent = agentRegistry.GetAgent(agentType) ?? new AgentDefinition
+        var agentCategory = Enum.Parse<AgentCategory>(entity.AgentType);
+        var agent = agentRegistry.GetAgent(agentCategory) ?? new AgentDefinition
         {
             Id = entity.AgentType.ToLowerInvariant(),
             Name = entity.AgentName,
-            Type = agentType,
+            Category = agentCategory,
             Description = entity.AgentName,
             SystemPrompt = entity.SystemPrompt
         };
@@ -105,7 +105,7 @@ public sealed class SessionRepository(SmartOpsHubDbContext dbContext, IAgentRegi
         {
             SessionId = entity.SessionId,
             UserId = entity.UserId,
-            AgentType = agentType,
+            AgentCategory = agentCategory,
             Agent = agent,
             CreatedAt = entity.CreatedAt,
             LastActivityAt = entity.LastActivityAt

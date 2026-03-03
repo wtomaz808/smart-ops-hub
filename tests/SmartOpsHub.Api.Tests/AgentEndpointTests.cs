@@ -50,7 +50,7 @@ public class AgentEndpointTests : IClassFixture<ApiTestFactory>
             Assert.True(agent.TryGetProperty("name", out var name), "Agent missing 'name' property");
             Assert.False(string.IsNullOrEmpty(name.GetString()));
 
-            Assert.True(agent.TryGetProperty("type", out _), "Agent missing 'type' property");
+            Assert.True(agent.TryGetProperty("category", out _), "Agent missing 'category' property");
 
             Assert.True(agent.TryGetProperty("description", out var desc), "Agent missing 'description' property");
             Assert.False(string.IsNullOrEmpty(desc.GetString()));

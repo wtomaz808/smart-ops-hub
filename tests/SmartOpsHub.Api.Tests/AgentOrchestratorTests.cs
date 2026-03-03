@@ -12,12 +12,12 @@ internal sealed class FakeAgentRegistry : IAgentRegistry
 {
     private readonly List<AgentDefinition> _agents =
     [
-        new() { Id = "github", Name = "GitHub", Type = AgentType.GitHub, Description = "GitHub agent", SystemPrompt = "You are GitHub agent." },
-        new() { Id = "azure", Name = "Azure", Type = AgentType.Azure, Description = "Azure agent", SystemPrompt = "You are Azure agent." }
+        new() { Id = "devops", Name = "DevOps", Category = AgentCategory.DevOps, McpServers = [McpServerType.GitHub], Description = "DevOps agent", SystemPrompt = "You are DevOps agent." },
+        new() { Id = "personal", Name = "Personal", Category = AgentCategory.Personal, McpServers = [McpServerType.Personal], Description = "Personal agent", SystemPrompt = "You are Personal agent." }
     ];
 
     public IReadOnlyList<AgentDefinition> GetAllAgents() => _agents;
-    public AgentDefinition? GetAgent(AgentType type) => _agents.FirstOrDefault(a => a.Type == type);
+    public AgentDefinition? GetAgent(AgentCategory category) => _agents.FirstOrDefault(a => a.Category == category);
     public IReadOnlyList<AgentDefinition> GetAgentsForUser(UserProfile user) => _agents;
 }
 
@@ -47,15 +47,15 @@ internal sealed class FakeAiCompletionService : IAiCompletionService
 
 internal sealed class FakeMcpGateway : IMcpGateway
 {
-    public Task<IMcpClient> GetClientAsync(AgentType agentType, CancellationToken cancellationToken = default)
+    public Task<IMcpClient> GetClientAsync(McpServerType serverType, CancellationToken cancellationToken = default)
     {
         return Task.FromResult<IMcpClient>(new FakeMcpClient());
     }
 
-    public Task<IReadOnlyDictionary<AgentType, bool>> GetHealthStatusAsync(CancellationToken cancellationToken = default)
+    public Task<IReadOnlyDictionary<McpServerType, bool>> GetHealthStatusAsync(CancellationToken cancellationToken = default)
     {
-        return Task.FromResult<IReadOnlyDictionary<AgentType, bool>>(
-            new Dictionary<AgentType, bool> { [AgentType.GitHub] = true });
+        return Task.FromResult<IReadOnlyDictionary<McpServerType, bool>>(
+            new Dictionary<McpServerType, bool> { [McpServerType.GitHub] = true });
     }
 }
 
@@ -152,11 +152,11 @@ public class AgentOrchestratorTests
     public async Task CreateSessionAsync_Returns_NewSession()
     {
         var orchestrator = CreateOrchestrator();
-        var session = await orchestrator.CreateSessionAsync("user-1", AgentType.GitHub);
+        var session = await orchestrator.CreateSessionAsync("user-1", AgentCategory.DevOps);
 
         Assert.NotNull(session);
         Assert.Equal("user-1", session.UserId);
-        Assert.Equal(AgentType.GitHub, session.AgentType);
+        Assert.Equal(AgentCategory.DevOps, session.AgentCategory);
         Assert.NotEmpty(session.SessionId);
     }
 
@@ -164,7 +164,7 @@ public class AgentOrchestratorTests
     public async Task CreateSessionAsync_AddsSystemPrompt()
     {
         var orchestrator = CreateOrchestrator();
-        var session = await orchestrator.CreateSessionAsync("user-1", AgentType.GitHub);
+        var session = await orchestrator.CreateSessionAsync("user-1", AgentCategory.DevOps);
 
         Assert.Contains(session.ConversationHistory, m => m.Role == ChatRole.System);
     }
@@ -175,16 +175,16 @@ public class AgentOrchestratorTests
         var registry = new FakeAgentRegistry();
         var orchestrator = CreateOrchestrator(registry: registry);
 
-        // Personal agent is not in our fake registry
+        // Training agent is not in our fake registry
         await Assert.ThrowsAsync<ArgumentException>(
-            () => orchestrator.CreateSessionAsync("user-1", AgentType.Personal));
+            () => orchestrator.CreateSessionAsync("user-1", AgentCategory.Training));
     }
 
     [Fact]
     public async Task GetSessionAsync_ExistingSession_Returns_Session()
     {
         var orchestrator = CreateOrchestrator();
-        var created = await orchestrator.CreateSessionAsync("user-1", AgentType.GitHub);
+        var created = await orchestrator.CreateSessionAsync("user-1", AgentCategory.DevOps);
 
         var found = await orchestrator.GetSessionAsync(created.SessionId);
 
@@ -204,7 +204,7 @@ public class AgentOrchestratorTests
     public async Task EndSessionAsync_RemovesSession()
     {
         var orchestrator = CreateOrchestrator();
-        var session = await orchestrator.CreateSessionAsync("user-1", AgentType.GitHub);
+        var session = await orchestrator.CreateSessionAsync("user-1", AgentCategory.DevOps);
 
         await orchestrator.EndSessionAsync(session.SessionId);
 
@@ -224,7 +224,7 @@ public class AgentOrchestratorTests
     {
         var ai = new FakeAiCompletionService { NextResponse = "Hello from AI" };
         var orchestrator = CreateOrchestrator(ai: ai);
-        var session = await orchestrator.CreateSessionAsync("user-1", AgentType.GitHub);
+        var session = await orchestrator.CreateSessionAsync("user-1", AgentCategory.DevOps);
 
         var response = await orchestrator.ProcessMessageAsync(session.SessionId, "Hello");
 
@@ -236,7 +236,7 @@ public class AgentOrchestratorTests
     public async Task ProcessMessageAsync_AddsUserAndAssistantMessages()
     {
         var orchestrator = CreateOrchestrator();
-        var session = await orchestrator.CreateSessionAsync("user-1", AgentType.GitHub);
+        var session = await orchestrator.CreateSessionAsync("user-1", AgentCategory.DevOps);
 
         await orchestrator.ProcessMessageAsync(session.SessionId, "Test message");
 
@@ -251,7 +251,7 @@ public class AgentOrchestratorTests
     public async Task ProcessMessageAsync_SetsStatusToIdleAfterSuccess()
     {
         var orchestrator = CreateOrchestrator();
-        var session = await orchestrator.CreateSessionAsync("user-1", AgentType.GitHub);
+        var session = await orchestrator.CreateSessionAsync("user-1", AgentCategory.DevOps);
 
         await orchestrator.ProcessMessageAsync(session.SessionId, "Hello");
 
@@ -263,7 +263,7 @@ public class AgentOrchestratorTests
     {
         var ai = new FakeAiCompletionService { ShouldThrow = true };
         var orchestrator = CreateOrchestrator(ai: ai);
-        var session = await orchestrator.CreateSessionAsync("user-1", AgentType.GitHub);
+        var session = await orchestrator.CreateSessionAsync("user-1", AgentCategory.DevOps);
 
         await Assert.ThrowsAsync<InvalidOperationException>(
             () => orchestrator.ProcessMessageAsync(session.SessionId, "Hello"));
@@ -285,7 +285,7 @@ public class AgentOrchestratorTests
     {
         var ai = new FakeAiCompletionService();
         var orchestrator = CreateOrchestrator(ai: ai);
-        var session = await orchestrator.CreateSessionAsync("user-1", AgentType.GitHub);
+        var session = await orchestrator.CreateSessionAsync("user-1", AgentCategory.DevOps);
 
         ai.NextResponse = "Response 1";
         await orchestrator.ProcessMessageAsync(session.SessionId, "Message 1");
@@ -304,7 +304,7 @@ public class AgentOrchestratorTests
     {
         var ai = new FakeAiCompletionService { NextResponse = "Hello from AI" };
         var orchestrator = CreateOrchestrator(ai: ai);
-        var session = await orchestrator.CreateSessionAsync("user-1", AgentType.GitHub);
+        var session = await orchestrator.CreateSessionAsync("user-1", AgentCategory.DevOps);
 
         var tokens = new List<string>();
         await foreach (var token in orchestrator.StreamMessageAsync(session.SessionId, "Hi"))
@@ -322,7 +322,7 @@ public class AgentOrchestratorTests
         var ai = new FakeAiCompletionService { NextResponse = "Streamed response" };
         var convRepo = new FakeConversationRepository();
         var orchestrator = CreateOrchestrator(ai: ai, convRepo: convRepo);
-        var session = await orchestrator.CreateSessionAsync("user-1", AgentType.GitHub);
+        var session = await orchestrator.CreateSessionAsync("user-1", AgentCategory.DevOps);
 
         await foreach (var _ in orchestrator.StreamMessageAsync(session.SessionId, "Hi")) { }
 
@@ -336,7 +336,7 @@ public class AgentOrchestratorTests
     public async Task StreamMessageAsync_SetsStatusToIdleAfterComplete()
     {
         var orchestrator = CreateOrchestrator();
-        var session = await orchestrator.CreateSessionAsync("user-1", AgentType.GitHub);
+        var session = await orchestrator.CreateSessionAsync("user-1", AgentCategory.DevOps);
 
         await foreach (var _ in orchestrator.StreamMessageAsync(session.SessionId, "Hi")) { }
 
@@ -359,7 +359,7 @@ public class AgentOrchestratorTests
     {
         var ai = new FakeAiCompletionService { NextResponse = "one two three" };
         var orchestrator = CreateOrchestrator(ai: ai);
-        var session = await orchestrator.CreateSessionAsync("user-1", AgentType.GitHub);
+        var session = await orchestrator.CreateSessionAsync("user-1", AgentCategory.DevOps);
 
         var tokens = new List<string>();
         await foreach (var token in orchestrator.StreamMessageAsync(session.SessionId, "Count"))

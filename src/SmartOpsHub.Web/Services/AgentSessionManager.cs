@@ -20,7 +20,7 @@ public sealed partial class AgentSessionManager
         var session = new AgentSession
         {
             UserId = userId,
-            AgentType = agent.Type,
+            AgentCategory = agent.Category,
             Agent = agent
         };
 
@@ -36,7 +36,7 @@ public sealed partial class AgentSessionManager
                 session.SessionId,
                 UserId = userId,
                 AgentId = agent.Id,
-                AgentType = agent.Type.ToString()
+                AgentType = agent.Category.ToString()
             });
         }
         catch (Exception ex)

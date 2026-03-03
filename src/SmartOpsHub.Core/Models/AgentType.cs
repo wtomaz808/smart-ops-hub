@@ -1,6 +1,9 @@
 namespace SmartOpsHub.Core.Models;
 
-public enum AgentType
+/// <summary>
+/// Identifies a specific MCP tool server (1:1 with MCP client implementations).
+/// </summary>
+public enum McpServerType
 {
     GitHub,
     Azure,

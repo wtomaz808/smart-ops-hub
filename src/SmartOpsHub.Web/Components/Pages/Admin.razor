@@ -97,11 +97,11 @@
                                 <div class="agent-avatar-sm">@agent.Name[0]</div>
                                 @agent.Name
                             </td>
-                            <td><code>@agent.Type</code></td>
+                            <td><code>@agent.Category</code></td>
                             <td>@agent.Description</td>
                             <td>
-                                <span class="status-badge @(agent.IsEnabled ? "status-active" : "status-inactive")">
-                                    @(agent.IsEnabled ? "Active" : "Disabled")
+                                <span class="status-badge @(agent.IsEnabled ? (agent.IsComingSoon ? "status-coming" : "status-active") : "status-inactive")">
+                                    @(agent.IsComingSoon ? "Coming Soon" : agent.IsEnabled ? "Active" : "Disabled")
                                 </span>
                             </td>
                         </tr>
@@ -128,7 +128,7 @@
                     {
                         <tr>
                             <td><strong>@server.Name</strong></td>
-                            <td><code>@server.AgentType</code></td>
+                            <td><code>@server.ServerType</code></td>
                             <td>
                                 <span class="status-badge @(server.IsHealthy ? "status-active" : "status-inactive")">
                                     @(server.IsHealthy ? "Connected" : "Unavailable")
@@ -158,10 +158,10 @@
     protected override void OnInitialized()
     {
         _agents = AgentRegistry.GetAllAgents().ToList();
-        _mcpServers = Enum.GetValues<AgentType>().Select(t => new McpServerStatus
+        _mcpServers = Enum.GetValues<McpServerType>().Select(t => new McpServerStatus
         {
             Name = $"SmartOpsHub.Mcp.{t}",
-            AgentType = t,
+            ServerType = t,
             IsHealthy = false
         }).ToList();
     }
@@ -188,7 +188,7 @@
     private sealed class McpServerStatus
     {
         public string Name { get; set; } = string.Empty;
-        public AgentType AgentType { get; set; }
+        public McpServerType ServerType { get; set; }
         public bool IsHealthy { get; set; }
     }
 }

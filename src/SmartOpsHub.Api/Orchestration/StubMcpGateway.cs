@@ -9,12 +9,12 @@ namespace SmartOpsHub.Api.Orchestration;
 /// </summary>
 internal sealed class StubMcpGateway : IMcpGateway
 {
-    public Task<IMcpClient> GetClientAsync(AgentType agentType, CancellationToken cancellationToken = default)
+    public Task<IMcpClient> GetClientAsync(McpServerType serverType, CancellationToken cancellationToken = default)
         => Task.FromResult<IMcpClient>(new StubMcpClient());
 
-    public Task<IReadOnlyDictionary<AgentType, bool>> GetHealthStatusAsync(CancellationToken cancellationToken = default)
-        => Task.FromResult<IReadOnlyDictionary<AgentType, bool>>(
-            Enum.GetValues<AgentType>().ToDictionary(t => t, _ => false));
+    public Task<IReadOnlyDictionary<McpServerType, bool>> GetHealthStatusAsync(CancellationToken cancellationToken = default)
+        => Task.FromResult<IReadOnlyDictionary<McpServerType, bool>>(
+            Enum.GetValues<McpServerType>().ToDictionary(t => t, _ => false));
 }
 
 internal sealed class StubMcpClient : IMcpClient

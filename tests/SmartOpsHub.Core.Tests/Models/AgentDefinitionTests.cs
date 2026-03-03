@@ -12,14 +12,15 @@ public class AgentDefinitionTests
             Id = "test-agent",
             Name = "Test Agent",
             Description = "A test agent",
-            Type = AgentType.GitHub,
+            Category = AgentCategory.DevOps,
+            McpServers = [McpServerType.GitHub],
             SystemPrompt = "You are a test agent."
         };
 
         Assert.Equal("test-agent", agent.Id);
         Assert.Equal("Test Agent", agent.Name);
         Assert.Equal("A test agent", agent.Description);
-        Assert.Equal(AgentType.GitHub, agent.Type);
+        Assert.Equal(AgentCategory.DevOps, agent.Category);
         Assert.Equal("You are a test agent.", agent.SystemPrompt);
     }
 
@@ -31,7 +32,8 @@ public class AgentDefinitionTests
             Id = "test-agent",
             Name = "Test Agent",
             Description = "A test agent",
-            Type = AgentType.GitHub,
+            Category = AgentCategory.DevOps,
+            McpServers = [McpServerType.GitHub],
             SystemPrompt = "You are a test agent."
         };
 

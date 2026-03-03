@@ -7,13 +7,14 @@ public class AgentSessionTests
     private static AgentSession CreateSession() => new()
     {
         UserId = "user-1",
-        AgentType = AgentType.GitHub,
+        AgentCategory = AgentCategory.DevOps,
         Agent = new AgentDefinition
         {
             Id = "github-agent",
             Name = "GitHub Agent",
             Description = "Test agent",
-            Type = AgentType.GitHub,
+            Category = AgentCategory.DevOps,
+            McpServers = [McpServerType.GitHub],
             SystemPrompt = "You are a test agent."
         }
     };

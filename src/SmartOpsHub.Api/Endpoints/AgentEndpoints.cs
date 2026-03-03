@@ -19,17 +19,17 @@ public static class AgentEndpoints
         .WithName("ListAgents")
         .WithSummary("List all available agents");
 
-        group.MapGet("/agents/{type}/health", async (AgentType type, IMcpGateway mcpGateway, CancellationToken ct) =>
+        group.MapGet("/agents/{type}/health", async (McpServerType type, IMcpGateway mcpGateway, CancellationToken ct) =>
         {
             try
             {
                 var client = await mcpGateway.GetClientAsync(type, ct);
                 var healthy = await client.IsHealthyAsync(ct);
-                return Results.Ok(new { AgentType = type.ToString(), Healthy = healthy });
+                return Results.Ok(new { ServerType = type.ToString(), Healthy = healthy });
             }
             catch (Exception ex)
             {
-                return Results.Ok(new { AgentType = type.ToString(), Healthy = false, Error = ex.Message });
+                return Results.Ok(new { ServerType = type.ToString(), Healthy = false, Error = ex.Message });
             }
         })
         .WithName("CheckAgentHealth")
@@ -37,7 +37,7 @@ public static class AgentEndpoints
 
         group.MapPost("/sessions", async (CreateSessionRequest request, IAgentOrchestrator orchestrator, CancellationToken ct) =>
         {
-            var session = await orchestrator.CreateSessionAsync(request.UserId, request.AgentType, ct);
+            var session = await orchestrator.CreateSessionAsync(request.UserId, request.AgentCategory, ct);
             return Results.Created($"/api/sessions/{session.SessionId}", new SessionResponse(session));
         })
         .WithName("CreateSession")
@@ -67,13 +67,13 @@ public static class AgentEndpoints
     }
 }
 
-public sealed record CreateSessionRequest(string UserId, AgentType AgentType);
+public sealed record CreateSessionRequest(string UserId, AgentCategory AgentCategory);
 
 public sealed record SessionResponse
 {
     public string SessionId { get; init; }
     public string UserId { get; init; }
-    public string AgentType { get; init; }
+    public string AgentCategory { get; init; }
     public string AgentName { get; init; }
     public string Status { get; init; }
     public DateTimeOffset CreatedAt { get; init; }
@@ -84,7 +84,7 @@ public sealed record SessionResponse
     {
         SessionId = session.SessionId;
         UserId = session.UserId;
-        AgentType = session.AgentType.ToString();
+        AgentCategory = session.AgentCategory.ToString();
         AgentName = session.Agent.Name;
         Status = session.Status.ToString();
         CreatedAt = session.CreatedAt;

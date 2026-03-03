@@ -12,11 +12,11 @@ namespace SmartOpsHub.E2E.Tests;
 
 internal sealed class TestMcpGateway : IMcpGateway
 {
-    public Task<IMcpClient> GetClientAsync(AgentType agentType, CancellationToken ct = default)
+    public Task<IMcpClient> GetClientAsync(McpServerType serverType, CancellationToken ct = default)
         => Task.FromResult<IMcpClient>(new TestMcpClient());
 
-    public Task<IReadOnlyDictionary<AgentType, bool>> GetHealthStatusAsync(CancellationToken ct = default)
-        => Task.FromResult<IReadOnlyDictionary<AgentType, bool>>(new Dictionary<AgentType, bool>());
+    public Task<IReadOnlyDictionary<McpServerType, bool>> GetHealthStatusAsync(CancellationToken ct = default)
+        => Task.FromResult<IReadOnlyDictionary<McpServerType, bool>>(new Dictionary<McpServerType, bool>());
 }
 
 internal sealed class TestMcpClient : IMcpClient
@@ -93,7 +93,7 @@ public class ApiSmokeTests : IClassFixture<SmartOpsHubTestFactory>
         response.EnsureSuccessStatusCode();
 
         var json = await response.Content.ReadFromJsonAsync<JsonElement>();
-        Assert.Equal(7, json.GetArrayLength());
+        Assert.Equal(4, json.GetArrayLength());
     }
 
     [Fact]
@@ -105,7 +105,7 @@ public class ApiSmokeTests : IClassFixture<SmartOpsHubTestFactory>
         foreach (var agent in agents.EnumerateArray())
         {
             Assert.True(agent.TryGetProperty("name", out _), "Agent missing 'name'");
-            Assert.True(agent.TryGetProperty("type", out _), "Agent missing 'type'");
+            Assert.True(agent.TryGetProperty("category", out _), "Agent missing 'category'");
             Assert.True(agent.TryGetProperty("description", out _), "Agent missing 'description'");
         }
     }
@@ -113,7 +113,7 @@ public class ApiSmokeTests : IClassFixture<SmartOpsHubTestFactory>
     [Fact]
     public async Task CreateSession_Returns_Session()
     {
-        var payload = new { UserId = "e2e-user", AgentType = 0 }; // GitHub = 0
+        var payload = new { UserId = "e2e-user", AgentCategory = 0 }; // DevOps = 0
         var response = await _client.PostAsJsonAsync("/api/sessions", payload);
         response.EnsureSuccessStatusCode();
 
@@ -124,7 +124,7 @@ public class ApiSmokeTests : IClassFixture<SmartOpsHubTestFactory>
     [Fact]
     public async Task CreateAndGetSession_Roundtrip()
     {
-        var createPayload = new { UserId = "e2e-user", AgentType = 0 };
+        var createPayload = new { UserId = "e2e-user", AgentCategory = 0 };
         var createResponse = await _client.PostAsJsonAsync("/api/sessions", createPayload);
         createResponse.EnsureSuccessStatusCode();
         var created = await createResponse.Content.ReadFromJsonAsync<JsonElement>();
@@ -144,7 +144,7 @@ public class ApiSmokeTests : IClassFixture<SmartOpsHubTestFactory>
     [Fact]
     public async Task DeleteSession_Returns_NoContent()
     {
-        var createPayload = new { UserId = "e2e-user", AgentType = 0 };
+        var createPayload = new { UserId = "e2e-user", AgentCategory = 0 };
         var createResponse = await _client.PostAsJsonAsync("/api/sessions", createPayload);
         var created = await createResponse.Content.ReadFromJsonAsync<JsonElement>();
         var sessionId = created.GetProperty("sessionId").GetString()!;

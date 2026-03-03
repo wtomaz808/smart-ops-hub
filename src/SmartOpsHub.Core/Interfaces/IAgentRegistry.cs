@@ -5,6 +5,6 @@ namespace SmartOpsHub.Core.Interfaces;
 public interface IAgentRegistry
 {
     IReadOnlyList<AgentDefinition> GetAllAgents();
-    AgentDefinition? GetAgent(AgentType type);
+    AgentDefinition? GetAgent(AgentCategory category);
     IReadOnlyList<AgentDefinition> GetAgentsForUser(UserProfile user);
 }

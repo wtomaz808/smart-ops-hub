@@ -11,11 +11,11 @@ namespace SmartOpsHub.Api.Tests;
 
 internal sealed class TestMcpGateway : IMcpGateway
 {
-    public Task<IMcpClient> GetClientAsync(AgentType agentType, CancellationToken ct = default)
+    public Task<IMcpClient> GetClientAsync(McpServerType serverType, CancellationToken ct = default)
         => Task.FromResult<IMcpClient>(new TestMcpClient());
 
-    public Task<IReadOnlyDictionary<AgentType, bool>> GetHealthStatusAsync(CancellationToken ct = default)
-        => Task.FromResult<IReadOnlyDictionary<AgentType, bool>>(new Dictionary<AgentType, bool>());
+    public Task<IReadOnlyDictionary<McpServerType, bool>> GetHealthStatusAsync(CancellationToken ct = default)
+        => Task.FromResult<IReadOnlyDictionary<McpServerType, bool>>(new Dictionary<McpServerType, bool>());
 }
 
 internal sealed class TestMcpClient : IMcpClient

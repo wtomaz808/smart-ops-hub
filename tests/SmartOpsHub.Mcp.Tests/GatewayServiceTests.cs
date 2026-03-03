@@ -12,9 +12,9 @@ public class McpGatewayServiceTests
     {
         // Use PersonalMcpClient as a lightweight test client
         var personalClient = new PersonalMcpClient([new CalendarPlugin()]);
-        var clients = new List<KeyValuePair<AgentType, IMcpClient>>
+        var clients = new List<KeyValuePair<McpServerType, IMcpClient>>
         {
-            new(AgentType.Personal, personalClient)
+            new(McpServerType.Personal, personalClient)
         };
         return new McpGatewayService(clients);
     }
@@ -23,7 +23,7 @@ public class McpGatewayServiceTests
     public async Task GetClientAsync_RegisteredAgent_Returns_Client()
     {
         var gateway = CreateGateway();
-        var client = await gateway.GetClientAsync(AgentType.Personal);
+        var client = await gateway.GetClientAsync(McpServerType.Personal);
         Assert.NotNull(client);
     }
 
@@ -32,7 +32,7 @@ public class McpGatewayServiceTests
     {
         var gateway = CreateGateway();
         await Assert.ThrowsAsync<InvalidOperationException>(
-            () => gateway.GetClientAsync(AgentType.GitHub));
+            () => gateway.GetClientAsync(McpServerType.GitHub));
     }
 
     [Fact]
@@ -41,14 +41,14 @@ public class McpGatewayServiceTests
         var gateway = CreateGateway();
         var status = await gateway.GetHealthStatusAsync();
         Assert.Single(status);
-        Assert.True(status[AgentType.Personal]);
+        Assert.True(status[McpServerType.Personal]);
     }
 
     [Fact]
     public async Task GetClientAsync_Returns_FunctionalClient()
     {
         var gateway = CreateGateway();
-        var client = await gateway.GetClientAsync(AgentType.Personal);
+        var client = await gateway.GetClientAsync(McpServerType.Personal);
         var tools = await client.ListToolsAsync();
         Assert.True(tools.Count > 0);
     }

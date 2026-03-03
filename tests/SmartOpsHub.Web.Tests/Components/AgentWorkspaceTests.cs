@@ -21,36 +21,33 @@ public class AgentWorkspaceTests : IDisposable
     }
 
     [Fact]
-    public void AgentRegistry_Returns_Seven_Agents()
+    public void AgentRegistry_Returns_Four_Agents()
     {
         var registry = new AgentRegistryService();
         var agents = registry.GetAllAgents();
-        Assert.Equal(7, agents.Count);
+        Assert.Equal(4, agents.Count);
     }
 
     [Fact]
-    public void AgentRegistry_ContainsAllAgentTypes()
+    public void AgentRegistry_ContainsAllAgentCategories()
     {
         var registry = new AgentRegistryService();
-        var types = registry.GetAllAgents().Select(a => a.Type).ToList();
+        var categories = registry.GetAllAgents().Select(a => a.Category).ToList();
 
-        Assert.Contains(AgentType.GitHub, types);
-        Assert.Contains(AgentType.Azure, types);
-        Assert.Contains(AgentType.AzureDevOps, types);
-        Assert.Contains(AgentType.DotNetDev, types);
-        Assert.Contains(AgentType.AiLlm, types);
-        Assert.Contains(AgentType.DevOps, types);
-        Assert.Contains(AgentType.Personal, types);
+        Assert.Contains(AgentCategory.DevOps, categories);
+        Assert.Contains(AgentCategory.BizOps, categories);
+        Assert.Contains(AgentCategory.Training, categories);
+        Assert.Contains(AgentCategory.Personal, categories);
     }
 
     [Fact]
     public void AgentRegistry_GetAgent_ReturnsCorrectAgent()
     {
         var registry = new AgentRegistryService();
-        var agent = registry.GetAgent(AgentType.GitHub);
+        var agent = registry.GetAgent(AgentCategory.DevOps);
 
         Assert.NotNull(agent);
-        Assert.Equal(AgentType.GitHub, agent!.Type);
+        Assert.Equal(AgentCategory.DevOps, agent!.Category);
         Assert.False(string.IsNullOrEmpty(agent.SystemPrompt));
     }
 
@@ -58,7 +55,7 @@ public class AgentWorkspaceTests : IDisposable
     public void AgentRegistry_GetAgent_NonExistent_ReturnsNull()
     {
         var registry = new AgentRegistryService();
-        var agent = registry.GetAgent((AgentType)999);
+        var agent = registry.GetAgent((AgentCategory)999);
         Assert.Null(agent);
     }
 

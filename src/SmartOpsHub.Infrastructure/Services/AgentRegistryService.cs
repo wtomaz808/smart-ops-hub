@@ -9,69 +9,60 @@ public sealed class AgentRegistryService : IAgentRegistry
     [
         new AgentDefinition
         {
-            Id = "github-agent",
-            Name = "GitHub Agent",
-            Description = "Manages GitHub repositories, pull requests, issues, and workflows.",
-            Type = AgentType.GitHub,
-            SystemPrompt = "You are a GitHub operations assistant. Help users manage repositories, review pull requests, triage issues, and configure GitHub Actions workflows. Provide concise, actionable guidance using GitHub best practices."
-        },
-        new AgentDefinition
-        {
-            Id = "azure-agent",
-            Name = "Azure Agent",
-            Description = "Manages Azure cloud resources, deployments, and monitoring.",
-            Type = AgentType.Azure,
-            SystemPrompt = "You are an Azure cloud assistant. Help users provision and manage Azure resources, troubleshoot deployments, monitor services, and optimize cloud costs. Follow Azure Well-Architected Framework principles."
-        },
-        new AgentDefinition
-        {
-            Id = "ado-agent",
-            Name = "Azure DevOps Agent",
-            Description = "Manages Azure DevOps projects, pipelines, boards, and artifacts.",
-            Type = AgentType.AzureDevOps,
-            SystemPrompt = "You are an Azure DevOps assistant. Help users manage work items, configure build and release pipelines, organize boards, and manage artifacts. Follow DevOps best practices for CI/CD."
-        },
-        new AgentDefinition
-        {
-            Id = "dotnet-dev-agent",
-            Name = ".NET Developer Agent",
-            Description = "Assists with .NET development, code reviews, and architectural guidance.",
-            Type = AgentType.DotNetDev,
-            SystemPrompt = "You are a .NET development assistant. Help users write, review, and refactor C# and .NET code. Provide guidance on architecture, design patterns, testing, and performance optimization following current .NET best practices."
-        },
-        new AgentDefinition
-        {
-            Id = "ai-llm-agent",
-            Name = "AI/LLM Agent",
-            Description = "Assists with AI model integration, prompt engineering, and LLM operations.",
-            Type = AgentType.AiLlm,
-            SystemPrompt = "You are an AI and LLM operations assistant. Help users integrate AI models, craft effective prompts, manage model deployments, and implement responsible AI practices. Provide guidance on Azure OpenAI, semantic kernel, and AI orchestration patterns."
-        },
-        new AgentDefinition
-        {
             Id = "devops-agent",
-            Name = "DevOps Agent",
-            Description = "Manages infrastructure as code, CI/CD pipelines, and platform engineering.",
-            Type = AgentType.DevOps,
-            SystemPrompt = "You are a DevOps and platform engineering assistant. Help users manage infrastructure as code, configure CI/CD pipelines, implement monitoring and observability, and follow SRE best practices for reliability and scalability."
+            Name = "DevOps",
+            Description = "GitHub, Azure, CI/CD pipelines, .NET development, and infrastructure operations.",
+            Category = AgentCategory.DevOps,
+            Icon = "⚙️",
+            McpServers = [McpServerType.GitHub, McpServerType.Azure, McpServerType.AzureDevOps, McpServerType.DevOps, McpServerType.DotNetDev],
+            SystemPrompt = """
+                You are a unified DevOps assistant for Smart Ops Hub. You have access to tools spanning GitHub, Azure cloud, Azure DevOps, CI/CD pipelines, and .NET development.
+                Help users manage repositories, pull requests, and issues on GitHub. Provision and monitor Azure resources. Configure Azure DevOps work items, boards, and pipelines.
+                Manage infrastructure as code, CI/CD pipelines, and platform engineering tasks. Assist with .NET code reviews, builds, tests, and architectural guidance.
+                Provide concise, actionable guidance. Follow Azure Well-Architected Framework, DevOps best practices, and current .NET conventions.
+                """
+        },
+        new AgentDefinition
+        {
+            Id = "bizops-agent",
+            Name = "BizOps",
+            Description = "Teams, Outlook, and corporate communication tools.",
+            Category = AgentCategory.BizOps,
+            Icon = "💼",
+            McpServers = [],
+            IsComingSoon = true,
+            SystemPrompt = "You are a business operations assistant. Help users manage corporate communications, meetings, and workflows through Microsoft Teams and Outlook."
+        },
+        new AgentDefinition
+        {
+            Id = "training-agent",
+            Name = "Training & Research",
+            Description = "Documentation, web search, and learning resources.",
+            Category = AgentCategory.Training,
+            Icon = "📚",
+            McpServers = [],
+            IsComingSoon = true,
+            SystemPrompt = "You are a training and research assistant. Help users find documentation, research best practices, and discover learning resources."
         },
         new AgentDefinition
         {
             Id = "personal-agent",
-            Name = "Personal Assistant Agent",
-            Description = "Provides general productivity assistance, scheduling, and task management.",
-            Type = AgentType.Personal,
-            SystemPrompt = "You are a personal productivity assistant. Help users manage tasks, organize information, draft communications, and improve workflow efficiency. Be helpful, concise, and proactive in offering relevant suggestions."
+            Name = "Personal",
+            Description = "Productivity, calendar, and personal tools.",
+            Category = AgentCategory.Personal,
+            Icon = "🎯",
+            McpServers = [McpServerType.Personal],
+            SystemPrompt = "You are a personal productivity assistant. Help users manage tasks, organize information, check calendars, and improve workflow efficiency. Be helpful, concise, and proactive."
         }
     ];
 
     public IReadOnlyList<AgentDefinition> GetAllAgents() => Agents;
 
-    public AgentDefinition? GetAgent(AgentType type) =>
-        Agents.FirstOrDefault(a => a.Type == type);
+    public AgentDefinition? GetAgent(AgentCategory category) =>
+        Agents.FirstOrDefault(a => a.Category == category);
 
     public IReadOnlyList<AgentDefinition> GetAgentsForUser(UserProfile user) =>
         user.AssignedAgents.Count > 0
-            ? Agents.Where(a => user.AssignedAgents.Contains(a.Type) && a.IsEnabled).ToList()
+            ? Agents.Where(a => user.AssignedAgents.Contains(a.Category) && a.IsEnabled).ToList()
             : Agents.Where(a => a.IsEnabled).ToList();
 }

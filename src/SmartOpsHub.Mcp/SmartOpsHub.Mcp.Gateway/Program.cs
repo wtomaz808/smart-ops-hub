@@ -56,15 +56,15 @@ builder.Services.AddSingleton<PersonalMcpClient>();
 // Register the gateway service
 builder.Services.AddSingleton<IMcpGateway>(sp =>
 {
-    var clients = new List<KeyValuePair<AgentType, IMcpClient>>
+    var clients = new List<KeyValuePair<McpServerType, IMcpClient>>
     {
-        new(AgentType.GitHub, sp.GetRequiredService<GitHubMcpClient>()),
-        new(AgentType.Azure, sp.GetRequiredService<AzureMcpClient>()),
-        new(AgentType.AzureDevOps, sp.GetRequiredService<AdoMcpClient>()),
-        new(AgentType.DotNetDev, sp.GetRequiredService<DotNetMcpClient>()),
-        new(AgentType.AiLlm, sp.GetRequiredService<AiMcpClient>()),
-        new(AgentType.DevOps, sp.GetRequiredService<DevOpsMcpClient>()),
-        new(AgentType.Personal, sp.GetRequiredService<PersonalMcpClient>()),
+        new(McpServerType.GitHub, sp.GetRequiredService<GitHubMcpClient>()),
+        new(McpServerType.Azure, sp.GetRequiredService<AzureMcpClient>()),
+        new(McpServerType.AzureDevOps, sp.GetRequiredService<AdoMcpClient>()),
+        new(McpServerType.DotNetDev, sp.GetRequiredService<DotNetMcpClient>()),
+        new(McpServerType.AiLlm, sp.GetRequiredService<AiMcpClient>()),
+        new(McpServerType.DevOps, sp.GetRequiredService<DevOpsMcpClient>()),
+        new(McpServerType.Personal, sp.GetRequiredService<PersonalMcpClient>()),
     };
     return new McpGatewayService(clients);
 });

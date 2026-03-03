@@ -2,53 +2,232 @@
 @using SmartOpsHub.Core.Models
 @inject IAgentRegistry AgentRegistry
 
-<div class="agent-workspace">
-    @foreach (var agent in _agents)
-    {
-        <div class="agent-workspace-cell">
-            <AgentChatPanel Agent="@agent" />
+<div class="workspace">
+    <nav class="workspace-sidebar">
+        <div class="sidebar-header">
+            <span class="sidebar-brand">Smart Ops Hub</span>
         </div>
-    }
+        <ul class="sidebar-agents">
+            @foreach (var agent in _agents)
+            {
+                <li class="sidebar-agent @(agent.Id == _selectedAgent?.Id ? "active" : "") @(agent.IsComingSoon ? "coming-soon" : "")"
+                    @onclick="() => SelectAgent(agent)">
+                    <span class="sidebar-agent-icon">@agent.Icon</span>
+                    <div class="sidebar-agent-info">
+                        <span class="sidebar-agent-name">@agent.Name</span>
+                        <span class="sidebar-agent-desc">@agent.Description</span>
+                    </div>
+                    @if (agent.IsComingSoon)
+                    {
+                        <span class="badge-coming-soon">Soon</span>
+                    }
+                </li>
+            }
+        </ul>
+    </nav>
+
+    <main class="workspace-main">
+        @if (_selectedAgent is not null && !_selectedAgent.IsComingSoon)
+        {
+            <AgentChatPanel Agent="@_selectedAgent" />
+        }
+        else if (_selectedAgent?.IsComingSoon == true)
+        {
+            <div class="coming-soon-panel">
+                <div class="coming-soon-icon">@_selectedAgent.Icon</div>
+                <h2>@_selectedAgent.Name</h2>
+                <p>@_selectedAgent.Description</p>
+                <span class="coming-soon-label">Coming Soon</span>
+            </div>
+        }
+        else
+        {
+            <div class="coming-soon-panel">
+                <h2>Select an agent to begin</h2>
+                <p>Choose an agent from the sidebar to start a conversation.</p>
+            </div>
+        }
+    </main>
 </div>
 
 @code {
     private IReadOnlyList<AgentDefinition> _agents = [];
+    private AgentDefinition? _selectedAgent;
 
     protected override void OnInitialized()
     {
         _agents = AgentRegistry.GetAllAgents()
             .Where(a => a.IsEnabled)
             .ToList();
+
+        _selectedAgent = _agents.FirstOrDefault(a => !a.IsComingSoon);
+    }
+
+    private void SelectAgent(AgentDefinition agent)
+    {
+        _selectedAgent = agent;
     }
 }
 
 <style>
-    .agent-workspace {
-        display: grid;
-        grid-template-columns: repeat(3, 1fr);
-        gap: 1rem;
-        height: calc(100vh - 120px);
-        padding: 1rem;
+    .workspace {
+        display: flex;
+        height: calc(100vh - 3.5rem);
+        overflow: hidden;
     }
 
-    .agent-workspace-cell {
-        min-height: 0;
+    .workspace-sidebar {
+        width: 260px;
+        min-width: 260px;
+        background: #1a1a2e;
+        color: #e0e0e0;
+        display: flex;
+        flex-direction: column;
+        border-right: 1px solid #16213e;
     }
 
-    @@media (max-width: 1200px) {
-        .agent-workspace {
-            grid-template-columns: repeat(2, 1fr);
-        }
+    .sidebar-header {
+        padding: 1.25rem 1rem;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    .sidebar-brand {
+        font-weight: 700;
+        font-size: 1rem;
+        color: #fff;
+        letter-spacing: 0.02em;
+    }
+
+    .sidebar-agents {
+        list-style: none;
+        padding: 0.5rem 0;
+        margin: 0;
+        flex: 1;
+        overflow-y: auto;
+    }
+
+    .sidebar-agent {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        padding: 0.75rem 1rem;
+        cursor: pointer;
+        transition: background 0.15s;
+        border-left: 3px solid transparent;
+    }
+
+    .sidebar-agent:hover {
+        background: rgba(255, 255, 255, 0.06);
+    }
+
+    .sidebar-agent.active {
+        background: rgba(13, 110, 253, 0.15);
+        border-left-color: #0d6efd;
+    }
+
+    .sidebar-agent.coming-soon {
+        opacity: 0.55;
+    }
+
+    .sidebar-agent-icon {
+        font-size: 1.5rem;
+        flex-shrink: 0;
+        width: 32px;
+        text-align: center;
+    }
+
+    .sidebar-agent-info {
+        display: flex;
+        flex-direction: column;
+        min-width: 0;
+        flex: 1;
+    }
+
+    .sidebar-agent-name {
+        font-weight: 600;
+        font-size: 0.9rem;
+        color: #fff;
+    }
+
+    .sidebar-agent-desc {
+        font-size: 0.7rem;
+        color: #8b8fa3;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .badge-coming-soon {
+        font-size: 0.6rem;
+        padding: 0.15rem 0.4rem;
+        background: #495057;
+        color: #dee2e6;
+        border-radius: 0.75rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        flex-shrink: 0;
+    }
+
+    .workspace-main {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        min-width: 0;
+        background: #f8f9fa;
+    }
+
+    .coming-soon-panel {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        color: #6c757d;
+        gap: 0.5rem;
+    }
+
+    .coming-soon-icon {
+        font-size: 3rem;
+        margin-bottom: 0.5rem;
+    }
+
+    .coming-soon-panel h2 {
+        font-size: 1.25rem;
+        color: #343a40;
+        margin: 0;
+    }
+
+    .coming-soon-panel p {
+        font-size: 0.9rem;
+        max-width: 400px;
+        margin: 0;
+    }
+
+    .coming-soon-label {
+        margin-top: 0.5rem;
+        padding: 0.3rem 1rem;
+        background: #e9ecef;
+        border-radius: 1rem;
+        font-size: 0.8rem;
+        font-weight: 600;
+        color: #495057;
     }
 
     @@media (max-width: 768px) {
-        .agent-workspace {
-            grid-template-columns: 1fr;
-            height: auto;
+        .workspace-sidebar {
+            width: 60px;
+            min-width: 60px;
         }
 
-        .agent-workspace-cell {
-            height: 500px;
+        .sidebar-header, .sidebar-agent-info, .badge-coming-soon {
+            display: none;
+        }
+
+        .sidebar-agent {
+            justify-content: center;
+            padding: 0.75rem 0;
         }
     }
 </style>

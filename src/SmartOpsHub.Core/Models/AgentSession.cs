@@ -12,7 +12,7 @@ public sealed class AgentSession
 {
     public string SessionId { get; init; } = Guid.NewGuid().ToString();
     public required string UserId { get; init; }
-    public required AgentType AgentType { get; init; }
+    public required AgentCategory AgentCategory { get; init; }
     public required AgentDefinition Agent { get; init; }
     public AgentSessionStatus Status { get; set; } = AgentSessionStatus.Idle;
     public List<ChatMessage> ConversationHistory { get; } = [];

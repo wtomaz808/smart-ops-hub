@@ -7,13 +7,13 @@ public sealed partial class McpToolExecutor(
     IMcpGateway mcpGateway,
     ILogger<McpToolExecutor> logger)
 {
-    public async Task<McpToolResult> ExecuteAsync(AgentType agentType, McpToolCall toolCall, CancellationToken cancellationToken = default)
+    public async Task<McpToolResult> ExecuteAsync(McpServerType serverType, McpToolCall toolCall, CancellationToken cancellationToken = default)
     {
-        LogExecutingTool(logger, toolCall.ToolName, agentType);
+        LogExecutingTool(logger, toolCall.ToolName, serverType);
 
         try
         {
-            var client = await mcpGateway.GetClientAsync(agentType, cancellationToken);
+            var client = await mcpGateway.GetClientAsync(serverType, cancellationToken);
             var result = await client.ExecuteToolAsync(toolCall, cancellationToken);
 
             LogToolExecuted(logger, toolCall.ToolName, result.IsError);
@@ -22,7 +22,7 @@ public sealed partial class McpToolExecutor(
         }
         catch (Exception ex)
         {
-            LogToolExecutionFailed(logger, ex, toolCall.ToolName, agentType);
+            LogToolExecutionFailed(logger, ex, toolCall.ToolName, serverType);
 
             return new McpToolResult
             {
@@ -33,12 +33,12 @@ public sealed partial class McpToolExecutor(
         }
     }
 
-    [LoggerMessage(Level = LogLevel.Information, Message = "Executing tool {ToolName} for agent {AgentType}")]
-    private static partial void LogExecutingTool(ILogger logger, string toolName, AgentType agentType);
+    [LoggerMessage(Level = LogLevel.Information, Message = "Executing tool {ToolName} for MCP server {ServerType}")]
+    private static partial void LogExecutingTool(ILogger logger, string toolName, McpServerType serverType);
 
     [LoggerMessage(Level = LogLevel.Information, Message = "Tool {ToolName} executed successfully, isError: {IsError}")]
     private static partial void LogToolExecuted(ILogger logger, string toolName, bool isError);
 
-    [LoggerMessage(Level = LogLevel.Error, Message = "Failed to execute tool {ToolName} for agent {AgentType}")]
-    private static partial void LogToolExecutionFailed(ILogger logger, Exception ex, string toolName, AgentType agentType);
+    [LoggerMessage(Level = LogLevel.Error, Message = "Failed to execute tool {ToolName} for MCP server {ServerType}")]
+    private static partial void LogToolExecutionFailed(ILogger logger, Exception ex, string toolName, McpServerType serverType);
 }

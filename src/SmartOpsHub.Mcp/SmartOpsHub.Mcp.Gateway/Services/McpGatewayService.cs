@@ -5,36 +5,36 @@ namespace SmartOpsHub.Mcp.Gateway.Services;
 
 public sealed class McpGatewayService : IMcpGateway
 {
-    private readonly Dictionary<AgentType, IMcpClient> _clients;
+    private readonly Dictionary<McpServerType, IMcpClient> _clients;
 
-    public McpGatewayService(IEnumerable<KeyValuePair<AgentType, IMcpClient>> clients)
+    public McpGatewayService(IEnumerable<KeyValuePair<McpServerType, IMcpClient>> clients)
     {
         _clients = clients.ToDictionary(c => c.Key, c => c.Value);
     }
 
-    public Task<IMcpClient> GetClientAsync(AgentType agentType, CancellationToken cancellationToken = default)
+    public Task<IMcpClient> GetClientAsync(McpServerType serverType, CancellationToken cancellationToken = default)
     {
-        if (_clients.TryGetValue(agentType, out var client))
+        if (_clients.TryGetValue(serverType, out var client))
         {
             return Task.FromResult(client);
         }
 
-        throw new InvalidOperationException($"No MCP client registered for agent type: {agentType}");
+        throw new InvalidOperationException($"No MCP client registered for server type: {serverType}");
     }
 
-    public async Task<IReadOnlyDictionary<AgentType, bool>> GetHealthStatusAsync(CancellationToken cancellationToken = default)
+    public async Task<IReadOnlyDictionary<McpServerType, bool>> GetHealthStatusAsync(CancellationToken cancellationToken = default)
     {
-        var results = new Dictionary<AgentType, bool>();
+        var results = new Dictionary<McpServerType, bool>();
 
-        foreach (var (agentType, client) in _clients)
+        foreach (var (serverType, client) in _clients)
         {
             try
             {
-                results[agentType] = await client.IsHealthyAsync(cancellationToken);
+                results[serverType] = await client.IsHealthyAsync(cancellationToken);
             }
             catch
             {
-                results[agentType] = false;
+                results[serverType] = false;
             }
         }
 

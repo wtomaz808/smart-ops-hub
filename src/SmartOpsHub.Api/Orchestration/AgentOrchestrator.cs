@@ -16,15 +16,15 @@ public sealed partial class AgentOrchestrator(
 {
     private readonly ConcurrentDictionary<string, AgentSession> _sessions = new();
 
-    public async Task<AgentSession> CreateSessionAsync(string userId, AgentType agentType, CancellationToken cancellationToken = default)
+    public async Task<AgentSession> CreateSessionAsync(string userId, AgentCategory agentCategory, CancellationToken cancellationToken = default)
     {
-        var agentDefinition = agentRegistry.GetAgent(agentType)
-            ?? throw new ArgumentException($"No agent found for type {agentType}.", nameof(agentType));
+        var agentDefinition = agentRegistry.GetAgent(agentCategory)
+            ?? throw new ArgumentException($"No agent found for category {agentCategory}.", nameof(agentCategory));
 
         var session = new AgentSession
         {
             UserId = userId,
-            AgentType = agentType,
+            AgentCategory = agentCategory,
             Agent = agentDefinition
         };
 
@@ -43,7 +43,7 @@ public sealed partial class AgentOrchestrator(
         await sessionRepository.SaveAsync(session, cancellationToken).ConfigureAwait(false);
         await conversationRepository.AddMessageAsync(session.SessionId, systemMessage, cancellationToken).ConfigureAwait(false);
 
-        LogSessionCreated(logger, session.SessionId, userId, agentType);
+        LogSessionCreated(logger, session.SessionId, userId, agentCategory);
 
         return session;
     }
@@ -63,7 +63,7 @@ public sealed partial class AgentOrchestrator(
 
         try
         {
-            var tools = await GetToolsForAgent(session.AgentType, cancellationToken).ConfigureAwait(false);
+            var tools = await GetToolsForAgent(session.AgentCategory, cancellationToken).ConfigureAwait(false);
 
             var responseText = await aiCompletionService.GetCompletionAsync(
                 session.ConversationHistory,
@@ -111,7 +111,7 @@ public sealed partial class AgentOrchestrator(
         session.AddMessage(userMsg);
         await conversationRepository.AddMessageAsync(sessionId, userMsg, cancellationToken).ConfigureAwait(false);
 
-        var tools = await GetToolsForAgent(session.AgentType, cancellationToken).ConfigureAwait(false);
+        var tools = await GetToolsForAgent(session.AgentCategory, cancellationToken).ConfigureAwait(false);
 
         var fullResponse = new StringBuilder();
         await foreach (var token in aiCompletionService.StreamCompletionAsync(
@@ -163,22 +163,32 @@ public sealed partial class AgentOrchestrator(
         return session ?? throw new KeyNotFoundException($"Session {sessionId} not found.");
     }
 
-    private async Task<IReadOnlyList<McpToolDefinition>?> GetToolsForAgent(AgentType agentType, CancellationToken cancellationToken)
+    private async Task<IReadOnlyList<McpToolDefinition>?> GetToolsForAgent(AgentCategory agentCategory, CancellationToken cancellationToken)
     {
-        try
-        {
-            var client = await mcpGateway.GetClientAsync(agentType, cancellationToken);
-            return await client.ListToolsAsync(cancellationToken);
-        }
-        catch (Exception ex)
-        {
-            LogToolRetrievalFailed(logger, ex, agentType);
+        var agent = agentRegistry.GetAgent(agentCategory);
+        if (agent is null || agent.McpServers.Length == 0)
             return null;
+
+        var allTools = new List<McpToolDefinition>();
+        foreach (var serverType in agent.McpServers)
+        {
+            try
+            {
+                var client = await mcpGateway.GetClientAsync(serverType, cancellationToken);
+                var tools = await client.ListToolsAsync(cancellationToken);
+                allTools.AddRange(tools);
+            }
+            catch (Exception ex)
+            {
+                LogToolRetrievalFailed(logger, ex, serverType);
+            }
         }
+
+        return allTools.Count > 0 ? allTools : null;
     }
 
-    [LoggerMessage(Level = LogLevel.Information, Message = "Created session {SessionId} for user {UserId} with agent {AgentType}")]
-    private static partial void LogSessionCreated(ILogger logger, string sessionId, string userId, AgentType agentType);
+    [LoggerMessage(Level = LogLevel.Information, Message = "Created session {SessionId} for user {UserId} with agent {AgentCategory}")]
+    private static partial void LogSessionCreated(ILogger logger, string sessionId, string userId, AgentCategory agentCategory);
 
     [LoggerMessage(Level = LogLevel.Information, Message = "Processed message for session {SessionId}, history length: {HistoryLength}")]
     private static partial void LogMessageProcessed(ILogger logger, string sessionId, int historyLength);
@@ -189,6 +199,6 @@ public sealed partial class AgentOrchestrator(
     [LoggerMessage(Level = LogLevel.Information, Message = "Ended session {SessionId}")]
     private static partial void LogSessionEnded(ILogger logger, string sessionId);
 
-    [LoggerMessage(Level = LogLevel.Warning, Message = "Failed to retrieve tools for agent {AgentType}, proceeding without tools")]
-    private static partial void LogToolRetrievalFailed(ILogger logger, Exception ex, AgentType agentType);
+    [LoggerMessage(Level = LogLevel.Warning, Message = "Failed to retrieve tools for MCP server {ServerType}, proceeding without tools")]
+    private static partial void LogToolRetrievalFailed(ILogger logger, Exception ex, McpServerType serverType);
 }

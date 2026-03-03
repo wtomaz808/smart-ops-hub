@@ -38,7 +38,7 @@ public class SessionRepositoryTests : IDisposable
         var entity = await _dbContext.AgentSessions.FirstOrDefaultAsync(s => s.SessionId == session.SessionId);
         Assert.NotNull(entity);
         Assert.Equal(session.UserId, entity.UserId);
-        Assert.Equal("GitHub", entity.AgentType);
+        Assert.Equal("DevOps", entity.AgentType);
     }
 
     [Fact]
@@ -66,7 +66,7 @@ public class SessionRepositoryTests : IDisposable
         Assert.NotNull(retrieved);
         Assert.Equal(session.SessionId, retrieved.SessionId);
         Assert.Equal(session.UserId, retrieved.UserId);
-        Assert.Equal(AgentType.GitHub, retrieved.AgentType);
+        Assert.Equal(AgentCategory.DevOps, retrieved.AgentCategory);
     }
 
     [Fact]
@@ -115,7 +115,7 @@ public class SessionRepositoryTests : IDisposable
         {
             SessionId = session.SessionId,
             UserId = session.UserId,
-            AgentType = "GitHub",
+            AgentType = "DevOps",
             MessageContent = "test",
             Role = "User",
             Timestamp = DateTimeOffset.UtcNow
@@ -138,7 +138,7 @@ public class SessionRepositoryTests : IDisposable
         {
             SessionId = session.SessionId,
             UserId = session.UserId,
-            AgentType = "GitHub",
+            AgentType = "DevOps",
             MessageContent = "Hello",
             Role = "User",
             Timestamp = DateTimeOffset.UtcNow
@@ -157,14 +157,15 @@ public class SessionRepositoryTests : IDisposable
         return new AgentSession
         {
             UserId = userId,
-            AgentType = AgentType.GitHub,
+            AgentCategory = AgentCategory.DevOps,
             Agent = new AgentDefinition
             {
-                Id = "github",
-                Name = "GitHub Agent",
-                Type = AgentType.GitHub,
-                Description = "GitHub operations",
-                SystemPrompt = "You are a GitHub assistant."
+                Id = "devops",
+                Name = "DevOps Agent",
+                Category = AgentCategory.DevOps,
+                McpServers = [McpServerType.GitHub],
+                Description = "DevOps operations",
+                SystemPrompt = "You are a DevOps assistant."
             }
         };
     }
@@ -189,9 +190,9 @@ public class ConversationRepositoryTests : IDisposable
         {
             SessionId = "test-session",
             UserId = "test-user",
-            AgentType = "GitHub",
-            AgentName = "GitHub Agent",
-            SystemPrompt = "You are a GitHub assistant.",
+            AgentType = "DevOps",
+            AgentName = "DevOps Agent",
+            SystemPrompt = "You are a DevOps assistant.",
             Status = "Idle"
         });
         _dbContext.SaveChanges();
