@@ -1,6 +1,18 @@
 @using SmartOpsHub.Core.Models
 
 <div class="chat-bubble @(Message.Role == ChatRole.User ? "chat-bubble-user" : "chat-bubble-assistant")">
+    @if (Message.Attachments.Count > 0)
+    {
+        <div class="chat-attachments">
+            @foreach (var file in Message.Attachments)
+            {
+                <div class="chat-attachment-chip">
+                    <span>📎</span> @file.FileName
+                    <span class="chat-attachment-size">(@FormatSize(file.SizeBytes))</span>
+                </div>
+            }
+        </div>
+    }
     <div class="chat-bubble-content">
         @Message.Content
     </div>
@@ -12,6 +24,13 @@
 @code {
     [Parameter, EditorRequired]
     public ChatMessage Message { get; set; } = default!;
+
+    private static string FormatSize(long bytes)
+    {
+        if (bytes >= 1024 * 1024) return $"{bytes / (1024.0 * 1024.0):F1} MB";
+        if (bytes >= 1024) return $"{bytes / 1024.0:F0} KB";
+        return $"{bytes} B";
+    }
 }
 
 <style>
@@ -48,5 +67,30 @@
         opacity: 0.7;
         margin-top: 0.25rem;
         text-align: right;
+    }
+
+    .chat-attachments {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.3rem;
+        margin-bottom: 0.35rem;
+    }
+
+    .chat-attachment-chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.25rem;
+        padding: 0.15rem 0.5rem;
+        border-radius: 0.75rem;
+        font-size: 0.72rem;
+        background: rgba(255, 255, 255, 0.2);
+    }
+
+    .chat-bubble-assistant .chat-attachment-chip {
+        background: rgba(0, 0, 0, 0.06);
+    }
+
+    .chat-attachment-size {
+        opacity: 0.7;
     }
 </style>

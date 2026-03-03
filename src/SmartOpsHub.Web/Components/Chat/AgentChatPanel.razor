@@ -1,5 +1,6 @@
 @using SmartOpsHub.Core.Models
 @using SmartOpsHub.Web.Services
+@using Microsoft.AspNetCore.Components.Forms
 @inject AgentChatService ChatService
 @implements IAsyncDisposable
 
@@ -12,7 +13,7 @@
             }
             else
             {
-                <div class="agent-avatar agent-avatar-placeholder">@Agent.Name[0]</div>
+                <div class="agent-avatar agent-avatar-placeholder">@(Agent.Icon ?? Agent.Name[..1])</div>
             }
             <div class="agent-details">
                 <span class="agent-name">@Agent.Name</span>
@@ -41,7 +42,27 @@
         }
     </div>
 
+    @if (_attachments.Count > 0)
+    {
+        <div class="attachment-bar">
+            @foreach (var file in _attachments)
+            {
+                <div class="attachment-chip">
+                    <span class="attachment-icon">📎</span>
+                    <span class="attachment-name" title="@file.Name">@TruncateFileName(file.Name)</span>
+                    <span class="attachment-size">@FormatSize(file.Size)</span>
+                    <button class="attachment-remove" @onclick="() => RemoveAttachment(file)">×</button>
+                </div>
+            }
+        </div>
+    }
+
     <div class="agent-chat-input">
+        <label class="file-upload-btn" title="Attach files (max 5 MB each, up to 5 files)">
+            📎
+            <InputFile OnChange="HandleFileSelected" multiple style="display:none"
+                       accept=".cs,.json,.md,.yaml,.yml,.xml,.txt,.bicep,.csproj,.sln,.ps1,.sh,.py,.js,.ts,.html,.css,.razor,.config,.props,.targets,.dockerfile,.tf,.env,.gitignore,.editorconfig,.csv,.log,.sql,.http,.png,.jpg,.jpeg,.gif,.svg,.pdf" />
+        </label>
         <input type="text"
                @bind="_inputMessage"
                @bind:event="oninput"
@@ -60,6 +81,7 @@
     public AgentDefinition Agent { get; set; } = default!;
 
     private readonly List<ChatMessage> _messages = [];
+    private readonly List<IBrowserFile> _attachments = [];
     private AgentSessionStatus _status = AgentSessionStatus.Idle;
     private string _inputMessage = string.Empty;
     private string _streamingContent = string.Empty;
@@ -120,18 +142,86 @@
         if (string.IsNullOrWhiteSpace(_inputMessage))
             return;
 
+        var attachments = new List<FileAttachment>();
+        foreach (var file in _attachments)
+        {
+            var attachment = await ReadFileAttachmentAsync(file);
+            if (attachment is not null)
+                attachments.Add(attachment);
+        }
+
         var userMessage = new ChatMessage
         {
             Role = ChatRole.User,
-            Content = _inputMessage
+            Content = _inputMessage,
+            Attachments = attachments
         };
 
         _messages.Add(userMessage);
         var messageText = _inputMessage;
         _inputMessage = string.Empty;
+        _attachments.Clear();
 
         _status = AgentSessionStatus.Thinking;
-        await ChatService.SendMessageAsync(Agent.Id, messageText);
+        await ChatService.SendMessageAsync(Agent.Id, messageText, attachments);
+    }
+
+    private async Task HandleFileSelected(InputFileChangeEventArgs e)
+    {
+        foreach (var file in e.GetMultipleFiles(FileAttachment.MaxFilesPerMessage))
+        {
+            if (file.Size > FileAttachment.MaxFileSizeBytes)
+                continue;
+            if (_attachments.Count >= FileAttachment.MaxFilesPerMessage)
+                break;
+            _attachments.Add(file);
+        }
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private void RemoveAttachment(IBrowserFile file)
+    {
+        _attachments.Remove(file);
+    }
+
+    private static async Task<FileAttachment?> ReadFileAttachmentAsync(IBrowserFile file)
+    {
+        try
+        {
+            using var stream = file.OpenReadStream(FileAttachment.MaxFileSizeBytes);
+            using var ms = new MemoryStream();
+            await stream.CopyToAsync(ms);
+            var data = ms.ToArray();
+
+            var attachment = new FileAttachment
+            {
+                FileName = file.Name,
+                ContentType = file.ContentType ?? "application/octet-stream",
+                SizeBytes = file.Size,
+                Base64Data = Convert.ToBase64String(data)
+            };
+
+            if (attachment.IsTextFile)
+            {
+                return attachment with { TextContent = System.Text.Encoding.UTF8.GetString(data) };
+            }
+
+            return attachment;
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
+    private static string TruncateFileName(string name) =>
+        name.Length <= 20 ? name : string.Concat(name.AsSpan(0, 10), "…", name.AsSpan(name.Length - 8));
+
+    private static string FormatSize(long bytes)
+    {
+        if (bytes >= 1024 * 1024) return $"{bytes / (1024.0 * 1024.0):F1} MB";
+        if (bytes >= 1024) return $"{bytes / 1024.0:F0} KB";
+        return $"{bytes} B";
     }
 
     private async Task HandleKeyDown(Microsoft.AspNetCore.Components.Web.KeyboardEventArgs e)
@@ -244,6 +334,56 @@
         border-color: #0d6efd;
         box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.15);
     }
+
+    .file-upload-btn {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        cursor: pointer;
+        font-size: 1.1rem;
+        flex-shrink: 0;
+        transition: background 0.15s;
+    }
+
+    .file-upload-btn:hover {
+        background: #e9ecef;
+    }
+
+    .attachment-bar {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.4rem;
+        padding: 0.4rem 0.75rem;
+        border-top: 1px solid #dee2e6;
+        background: #f8f9fa;
+    }
+
+    .attachment-chip {
+        display: flex;
+        align-items: center;
+        gap: 0.3rem;
+        padding: 0.25rem 0.5rem;
+        background: #e9ecef;
+        border-radius: 1rem;
+        font-size: 0.75rem;
+    }
+
+    .attachment-icon { font-size: 0.8rem; }
+    .attachment-name { max-width: 120px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .attachment-size { color: #6c757d; }
+    .attachment-remove {
+        background: none;
+        border: none;
+        cursor: pointer;
+        font-size: 0.9rem;
+        color: #868e96;
+        padding: 0 0.15rem;
+        line-height: 1;
+    }
+    .attachment-remove:hover { color: #c92a2a; }
 
     .agent-chat-input button {
         padding: 0.5rem 1.25rem;

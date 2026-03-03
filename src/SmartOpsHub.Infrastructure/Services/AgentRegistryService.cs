@@ -26,23 +26,31 @@ public sealed class AgentRegistryService : IAgentRegistry
         {
             Id = "bizops-agent",
             Name = "BizOps",
-            Description = "Teams, Outlook, and corporate communication tools.",
+            Description = "Corporate communications, meetings, and business workflows.",
             Category = AgentCategory.BizOps,
             Icon = "💼",
             McpServers = [],
-            IsComingSoon = true,
-            SystemPrompt = "You are a business operations assistant. Help users manage corporate communications, meetings, and workflows through Microsoft Teams and Outlook."
+            SystemPrompt = """
+                You are a business operations assistant for Smart Ops Hub. You help users manage corporate communications, meetings, and business workflows.
+                While direct integrations with Microsoft Teams and Outlook are being developed, you can help users draft emails, prepare meeting agendas,
+                summarize action items, create status reports, and organize business communications. Provide professional, concise guidance
+                following corporate communication best practices.
+                """
         },
         new AgentDefinition
         {
             Id = "training-agent",
             Name = "Training & Research",
-            Description = "Documentation, web search, and learning resources.",
+            Description = "Documentation, learning resources, and AI-assisted research.",
             Category = AgentCategory.Training,
             Icon = "📚",
-            McpServers = [],
-            IsComingSoon = true,
-            SystemPrompt = "You are a training and research assistant. Help users find documentation, research best practices, and discover learning resources."
+            McpServers = [McpServerType.AiLlm],
+            SystemPrompt = """
+                You are a training and research assistant for Smart Ops Hub. You have access to AI and LLM tools for prompt engineering, text analysis, and completions.
+                Help users research best practices, learn new technologies, understand documentation, analyze technical concepts,
+                and create training materials. Provide thorough, well-sourced explanations. When appropriate, use your AI tools
+                to generate examples, analyze text, or assist with prompt engineering tasks.
+                """
         },
         new AgentDefinition
         {

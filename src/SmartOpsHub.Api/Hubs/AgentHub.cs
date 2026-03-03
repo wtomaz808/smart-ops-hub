@@ -20,15 +20,40 @@ public sealed partial class AgentHub(
         LogConnectionLeft(logger, Context.ConnectionId, sessionId);
     }
 
-    public async Task SendMessage(string sessionId, string message)
+    public async Task SendMessage(string sessionId, string message, List<FileAttachmentDto>? attachments = null)
     {
         LogProcessingMessage(logger, sessionId);
 
         await SendStatusUpdate(sessionId, AgentSessionStatus.Thinking);
 
+        // Build enriched message with file contents
+        var enrichedMessage = message;
+        if (attachments is { Count: > 0 })
+        {
+            var fileContext = new System.Text.StringBuilder();
+            fileContext.AppendLine("\n\n---\nAttached files:");
+            foreach (var file in attachments)
+            {
+                fileContext.AppendLine(System.Globalization.CultureInfo.InvariantCulture, $"\n### {file.FileName} ({file.ContentType}, {file.SizeBytes} bytes)");
+                if (!string.IsNullOrEmpty(file.TextContent))
+                {
+                    fileContext.AppendLine("```");
+                    fileContext.AppendLine(file.TextContent.Length > 50_000
+                        ? string.Concat(file.TextContent.AsSpan(0, 50_000), "\n... (truncated)")
+                        : file.TextContent);
+                    fileContext.AppendLine("```");
+                }
+                else
+                {
+                    fileContext.AppendLine("(binary file — content not shown)");
+                }
+            }
+            enrichedMessage = message + fileContext;
+        }
+
         try
         {
-            await foreach (var token in orchestrator.StreamMessageAsync(sessionId, message, Context.ConnectionAborted))
+            await foreach (var token in orchestrator.StreamMessageAsync(sessionId, enrichedMessage, Context.ConnectionAborted))
             {
                 await Clients.Group(sessionId).SendAsync("ReceiveStreamToken", token, Context.ConnectionAborted);
             }
@@ -60,4 +85,13 @@ public sealed partial class AgentHub(
 
     [LoggerMessage(Level = LogLevel.Error, Message = "Error processing message for session {SessionId}")]
     private static partial void LogMessageError(ILogger logger, Exception ex, string sessionId);
+}
+
+public sealed record FileAttachmentDto
+{
+    public string FileName { get; init; } = string.Empty;
+    public string ContentType { get; init; } = string.Empty;
+    public long SizeBytes { get; init; }
+    public string? TextContent { get; init; }
+    public string? Base64Data { get; init; }
 }
