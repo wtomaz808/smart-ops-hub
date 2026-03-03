@@ -48,6 +48,12 @@ param imageTag string = 'latest'
 @description('Project name used for resource naming')
 param projectName string
 
+@description('Entra ID app registration client ID for site authentication')
+param entraAppClientId string = ''
+
+@description('Entra ID tenant ID for authentication')
+param entraTenantId string = ''
+
 resource containerAppsEnvironment 'Microsoft.App/managedEnvironments@2024-03-01' = {
   name: environmentName
   location: location
@@ -129,6 +135,22 @@ resource webApp 'Microsoft.App/containerApps@2024-03-01' = {
             {
               name: 'ApiBaseUrl'
               value: 'https://${projectName}-api.${containerAppsEnvironment.properties.defaultDomain}'
+            }
+            {
+              name: 'AzureAd__Instance'
+              value: 'https://login.microsoftonline.us/'
+            }
+            {
+              name: 'AzureAd__TenantId'
+              value: entraTenantId
+            }
+            {
+              name: 'AzureAd__ClientId'
+              value: entraAppClientId
+            }
+            {
+              name: 'AzureAd__CallbackPath'
+              value: '/signin-oidc'
             }
           ]
           probes: [
@@ -225,6 +247,18 @@ resource apiApp 'Microsoft.App/containerApps@2024-03-01' = {
             {
               name: 'Cors__AllowedOrigins__0'
               value: 'https://${projectName}-web.${containerAppsEnvironment.properties.defaultDomain}'
+            }
+            {
+              name: 'AzureAd__Instance'
+              value: 'https://login.microsoftonline.us/'
+            }
+            {
+              name: 'AzureAd__TenantId'
+              value: entraTenantId
+            }
+            {
+              name: 'AzureAd__ClientId'
+              value: entraAppClientId
             }
           ]
           probes: [

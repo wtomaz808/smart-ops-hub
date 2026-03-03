@@ -32,6 +32,12 @@ param gpt4oCapacity int = 10
 @description('TPM capacity (thousands) for GPT-4.1 deployment')
 param gpt41Capacity int = 10
 
+@description('Entra ID app registration client ID for site authentication (created by setup-app-registration.ps1)')
+param entraAppClientId string = ''
+
+@description('Entra ID tenant ID for authentication')
+param entraTenantId string = ''
+
 // ─── Variables ──────────────────────────────────────────────────────────────────
 
 var resourcePrefix = '${projectName}-${environmentName}'
@@ -168,6 +174,8 @@ module containerApps 'modules/container-apps.bicep' = {
     aiServicesEndpoint: aiServices.outputs.aiServicesEndpoint
     imageTag: imageTag
     projectName: projectName
+    entraAppClientId: entraAppClientId
+    entraTenantId: entraTenantId
   }
 }
 
