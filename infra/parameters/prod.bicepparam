@@ -2,7 +2,6 @@ using '../main.bicep'
 
 param environmentName = 'prod'
 param location = 'usgovarizona'
-param projectName = 'smart-ops-hub'
 param imageTag = 'latest'
 param sqlSkuName = 'S2'
 param sqlSkuTier = 'Standard'

@@ -49,8 +49,11 @@ param aiServicesEndpoint string
 @description('Container image tag to deploy')
 param imageTag string = 'latest'
 
-@description('Project name used for resource naming')
-param projectName string
+@description('Naming prefix (e.g., aoh)')
+param prefix string
+
+@description('Environment name (e.g., dev, prod)')
+param env string
 
 @description('Entra ID app registration client ID for site authentication')
 param entraAppClientId string = ''
@@ -100,7 +103,7 @@ resource containerAppsEnvDiag 'Microsoft.Insights/diagnosticSettings@2021-05-01-
 
 // --- Web App ---
 resource webApp 'Microsoft.App/containerApps@2024-03-01' = {
-  name: '${projectName}-web'
+  name: '${prefix}-ca-web-${env}'
   location: location
   tags: tags
   identity: {
@@ -129,7 +132,7 @@ resource webApp 'Microsoft.App/containerApps@2024-03-01' = {
       containers: [
         {
           name: 'web'
-          image: '${acrLoginServer}/${projectName}-web:${imageTag}'
+          image: '${acrLoginServer}/aoh-web:${imageTag}'
           resources: {
             cpu: json('0.5')
             memory: '1Gi'
@@ -145,7 +148,7 @@ resource webApp 'Microsoft.App/containerApps@2024-03-01' = {
             }
             {
               name: 'ApiBaseUrl'
-              value: 'https://${projectName}-api.${containerAppsEnvironment.properties.defaultDomain}'
+              value: 'https://${prefix}-ca-api-${env}.${containerAppsEnvironment.properties.defaultDomain}'
             }
             {
               name: 'AzureAd__Instance'
@@ -196,7 +199,7 @@ resource webApp 'Microsoft.App/containerApps@2024-03-01' = {
 
 // --- API App ---
 resource apiApp 'Microsoft.App/containerApps@2024-03-01' = {
-  name: '${projectName}-api'
+  name: '${prefix}-ca-api-${env}'
   location: location
   tags: tags
   identity: {
@@ -225,7 +228,7 @@ resource apiApp 'Microsoft.App/containerApps@2024-03-01' = {
       containers: [
         {
           name: 'api'
-          image: '${acrLoginServer}/${projectName}-api:${imageTag}'
+          image: '${acrLoginServer}/aoh-api:${imageTag}'
           resources: {
             cpu: json('1.0')
             memory: '2Gi'
@@ -257,7 +260,7 @@ resource apiApp 'Microsoft.App/containerApps@2024-03-01' = {
             }
             {
               name: 'Cors__AllowedOrigins__0'
-              value: 'https://${projectName}-web.${containerAppsEnvironment.properties.defaultDomain}'
+              value: 'https://${prefix}-ca-web-${env}.${containerAppsEnvironment.properties.defaultDomain}'
             }
             {
               name: 'AzureAd__Instance'
@@ -304,7 +307,7 @@ resource apiApp 'Microsoft.App/containerApps@2024-03-01' = {
 
 // --- MCP Gateway App ---
 resource mcpGatewayApp 'Microsoft.App/containerApps@2024-03-01' = {
-  name: '${projectName}-mcp-gateway'
+  name: '${prefix}-ca-gw-${env}'
   location: location
   tags: tags
   identity: {
@@ -333,7 +336,7 @@ resource mcpGatewayApp 'Microsoft.App/containerApps@2024-03-01' = {
       containers: [
         {
           name: 'mcp-gateway'
-          image: '${acrLoginServer}/${projectName}-mcp-gateway:${imageTag}'
+          image: '${acrLoginServer}/aoh-gw:${imageTag}'
           resources: {
             cpu: json('0.5')
             memory: '1Gi'

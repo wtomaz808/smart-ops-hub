@@ -51,7 +51,7 @@ param(
 
 $ErrorActionPreference = 'Stop'
 
-$ProjectName = 'smart-ops-hub'
+$Prefix = 'aoh'
 $ResourceGroup = "rg-AgentOpsHub-$Environment"
 $TenantId = 'd14ab12e-c535-4865-a593-c4115e7de102'
 $ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
@@ -99,7 +99,7 @@ else {
 
 # Create resource group if it doesn't exist
 Write-Host "`n[3/6] Ensuring resource group exists..." -ForegroundColor Yellow
-az group create --name $ResourceGroup --location $Location --tags environment=$Environment project=$ProjectName managedBy=bicep --output none
+az group create --name $ResourceGroup --location $Location --tags environment=$Environment project=AgentOpsHub managedBy=bicep --output none
 Write-Host "  Resource group '$ResourceGroup' ready." -ForegroundColor Green
 
 # Validate / What-If / Deploy
@@ -123,7 +123,7 @@ else {
         --parameters imageTag=$ImageTag `
         --parameters entraAppClientId=$EntraAppClientId `
         --parameters entraTenantId=$TenantId `
-        --name "$ProjectName-$Environment-$(Get-Date -Format 'yyyyMMdd-HHmmss')" `
+        --name "aoh-$Environment-$(Get-Date -Format 'yyyyMMdd-HHmmss')" `
         --output json
 
     if ($LASTEXITCODE -ne 0) {
@@ -164,16 +164,16 @@ else {
     }
 
     # Output the GitHub Actions vars that need to be configured
-    $acrName = "acr$($ProjectName -replace '-','')$Environment"
+    $acrName = "${Prefix}acr${Environment}"
     Write-Host "`n  GitHub Actions Configuration Needed:" -ForegroundColor Yellow
     Write-Host "  ───────────────────────────────────────"
     Write-Host "  Repository Variables (Settings > Secrets and variables > Actions > Variables):"
     Write-Host "    ACR_NAME                   = $acrName"
     Write-Host "    ACR_LOGIN_SERVER           = $acrName.azurecr.us"
     Write-Host "    AZURE_RESOURCE_GROUP       = $ResourceGroup"
-    Write-Host "    API_CONTAINER_APP_NAME     = $ProjectName-$Environment-api"
-    Write-Host "    WEB_CONTAINER_APP_NAME     = $ProjectName-$Environment-web"
-    Write-Host "    GATEWAY_CONTAINER_APP_NAME = $ProjectName-$Environment-mcp-gateway"
+    Write-Host "    API_CONTAINER_APP_NAME     = $Prefix-ca-api-$Environment"
+    Write-Host "    WEB_CONTAINER_APP_NAME     = $Prefix-ca-web-$Environment"
+    Write-Host "    GATEWAY_CONTAINER_APP_NAME = $Prefix-ca-gw-$Environment"
     Write-Host "    ENTRA_APP_CLIENT_ID        = $EntraAppClientId"
     Write-Host ""
 }

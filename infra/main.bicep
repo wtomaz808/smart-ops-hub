@@ -1,4 +1,4 @@
-// Main Bicep orchestrator for Smart Ops Hub — Azure Government deployment
+// Main Bicep orchestrator for AgentOpsHub — Azure Government deployment
 targetScope = 'resourceGroup'
 
 // ─── Parameters ─────────────────────────────────────────────────────────────────
@@ -8,9 +8,6 @@ param environmentName string
 
 @description('Azure region for all resources — defaults to Azure Government Arizona')
 param location string = 'usgovarizona'
-
-@description('Project name used as a base for resource naming')
-param projectName string = 'smart-ops-hub'
 
 @description('Container image tag to deploy')
 param imageTag string = 'latest'
@@ -40,17 +37,14 @@ param entraTenantId string = ''
 
 // ─── Variables ──────────────────────────────────────────────────────────────────
 
-var resourcePrefix = '${projectName}-${environmentName}'
+// Naming: aoh-{type}-{env}  (no hyphens for ACR, Key Vault, Storage)
+var prefix = 'aoh'
+var env = environmentName
 var tags = {
   environment: environmentName
-  project: projectName
+  project: 'AgentOpsHub'
   managedBy: 'bicep'
 }
-
-// Sanitized names for resources that disallow hyphens
-var acrName = replace('acr${projectName}${environmentName}', '-', '')
-var sqlServerName = '${resourcePrefix}-sql'
-var sqlDatabaseName = '${projectName}-db'
 
 // ─── Modules ────────────────────────────────────────────────────────────────────
 
@@ -59,7 +53,7 @@ module identity 'modules/identity.bicep' = {
   name: 'identity'
   params: {
     location: location
-    identityName: '${resourcePrefix}-identity'
+    identityName: '${prefix}-id-${env}'
     tags: tags
   }
 }
@@ -69,7 +63,7 @@ module networking 'modules/networking.bicep' = {
   name: 'networking'
   params: {
     location: location
-    vnetName: '${resourcePrefix}-vnet'
+    vnetName: '${prefix}-vnet-${env}'
     tags: tags
   }
 }
@@ -79,31 +73,31 @@ module monitoring 'modules/monitoring.bicep' = {
   name: 'monitoring'
   params: {
     location: location
-    logAnalyticsName: '${resourcePrefix}-log'
-    appInsightsName: '${resourcePrefix}-appi'
+    logAnalyticsName: '${prefix}-log-${env}'
+    appInsightsName: '${prefix}-appi-${env}'
     tags: tags
     retentionInDays: logRetentionDays
   }
 }
 
-// 4. Azure Container Registry
+// 4. Azure Container Registry (no hyphens)
 module acr 'modules/acr.bicep' = {
   name: 'acr'
   params: {
     location: location
-    acrName: acrName
+    acrName: '${prefix}acr${env}'
     tags: tags
     principalId: identity.outputs.principalId
     logAnalyticsWorkspaceId: monitoring.outputs.logAnalyticsWorkspaceId
   }
 }
 
-// 5. Key Vault
+// 5. Key Vault (no hyphens)
 module keyvault 'modules/keyvault.bicep' = {
   name: 'keyvault'
   params: {
     location: location
-    keyVaultName: '${resourcePrefix}-kv'
+    keyVaultName: '${prefix}kv${env}'
     tags: tags
     principalId: identity.outputs.principalId
     logAnalyticsWorkspaceId: monitoring.outputs.logAnalyticsWorkspaceId
@@ -115,8 +109,8 @@ module sql 'modules/sql.bicep' = {
   name: 'sql'
   params: {
     location: location
-    sqlServerName: sqlServerName
-    sqlDatabaseName: sqlDatabaseName
+    sqlServerName: '${prefix}-sql-${env}'
+    sqlDatabaseName: '${prefix}-db-${env}'
     tags: tags
     principalId: identity.outputs.principalId
     identityClientId: identity.outputs.clientId
@@ -133,7 +127,7 @@ module openai 'modules/openai.bicep' = {
   name: 'openai'
   params: {
     location: location
-    openAiName: '${resourcePrefix}-oai'
+    openAiName: '${prefix}-oai-${env}'
     tags: tags
     principalId: identity.outputs.principalId
     logAnalyticsWorkspaceId: monitoring.outputs.logAnalyticsWorkspaceId
@@ -147,7 +141,7 @@ module aiServices 'modules/ai-services.bicep' = {
   name: 'ai-services'
   params: {
     location: location
-    aiServicesName: '${resourcePrefix}-ais'
+    aiServicesName: '${prefix}-ais-${env}'
     tags: tags
     principalId: identity.outputs.principalId
     logAnalyticsWorkspaceId: monitoring.outputs.logAnalyticsWorkspaceId
@@ -159,7 +153,7 @@ module containerApps 'modules/container-apps.bicep' = {
   name: 'container-apps'
   params: {
     location: location
-    environmentName: '${resourcePrefix}-cae'
+    environmentName: '${prefix}-cae-${env}'
     tags: tags
     containerAppsSubnetId: networking.outputs.containerAppsSubnetId
     logAnalyticsWorkspaceId: monitoring.outputs.logAnalyticsWorkspaceId
@@ -174,7 +168,8 @@ module containerApps 'modules/container-apps.bicep' = {
     keyVaultUri: keyvault.outputs.keyVaultUri
     aiServicesEndpoint: aiServices.outputs.aiServicesEndpoint
     imageTag: imageTag
-    projectName: projectName
+    prefix: prefix
+    env: env
     entraAppClientId: entraAppClientId
     entraTenantId: entraTenantId
   }

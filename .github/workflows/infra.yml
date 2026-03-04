@@ -32,7 +32,7 @@ permissions:
   pull-requests: write
 
 env:
-  PROJECT_NAME: smart-ops-hub
+  PREFIX: aoh
 
 jobs:
   compile:
@@ -180,7 +180,7 @@ jobs:
           az group create \
             --name rg-AgentOpsHub-${ENV} \
             --location usgovarizona \
-            --tags environment=${ENV} project=${{ env.PROJECT_NAME }} managedBy=bicep
+            --tags environment=${ENV} project=AgentOpsHub managedBy=bicep
 
       - name: Deploy Bicep
         id: deploy
@@ -191,7 +191,7 @@ jobs:
             --template-file infra/main.bicep \
             --parameters infra/parameters/${ENV}.bicepparam \
             --parameters imageTag=${{ github.sha }} \
-            --name "${{ env.PROJECT_NAME }}-${ENV}-$(date +%Y%m%d-%H%M%S)" \
+            --name "${{ env.PREFIX }}-${ENV}-$(date +%Y%m%d-%H%M%S)" \
             --output json > deploy_output.json
 
           # Extract outputs for downstream use
