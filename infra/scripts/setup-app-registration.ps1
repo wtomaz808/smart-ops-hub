@@ -67,31 +67,12 @@ else {
         $redirectUris += "https://$WebAppFqdn/signin-oidc"
     }
 
-    $webConfig = @{
-        redirectUris          = $redirectUris
-        implicitGrantSettings = @{
-            enableIdTokenIssuance = $true
-        }
-    }
-
-    $appBody = @{
-        displayName = $AppDisplayName
-        signInAudience = "AzureADMyOrg"
-        web = $webConfig
-        requiredResourceAccess = @(
-            @{
-                resourceAppId = "00000003-0000-0000-c000-000000000000"  # Microsoft Graph
-                resourceAccess = @(
-                    @{
-                        id   = "e1fe6dd8-ba31-4d61-89e7-88639da4683d"  # User.Read
-                        type = "Scope"
-                    }
-                )
-            }
-        )
-    } | ConvertTo-Json -Depth 5
-
-    $newApp = $appBody | az ad app create --body @- -o json | ConvertFrom-Json
+    $newApp = az ad app create `
+        --display-name $AppDisplayName `
+        --sign-in-audience AzureADMyOrg `
+        --web-redirect-uris $redirectUris `
+        --enable-id-token-issuance true `
+        -o json | ConvertFrom-Json
 
     if ($LASTEXITCODE -ne 0 -or -not $newApp) {
         Write-Error "Failed to create app registration."
@@ -100,6 +81,13 @@ else {
     $AppId = $newApp.appId
     $ObjectId = $newApp.id
     Write-Host "  Created app: $AppId (Object ID: $ObjectId)" -ForegroundColor Green
+
+    # Add Microsoft Graph User.Read delegated permission
+    Write-Host "  Adding Microsoft Graph User.Read permission..." -ForegroundColor Yellow
+    az ad app permission add --id $AppId `
+        --api 00000003-0000-0000-c000-000000000000 `
+        --api-permissions e1fe6dd8-ba31-4d61-89e7-88639da4683d=Scope `
+        --output none 2>$null
 }
 
 # Ensure service principal exists

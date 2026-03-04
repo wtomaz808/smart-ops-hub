@@ -164,6 +164,7 @@ module containerApps 'modules/container-apps.bicep' = {
     containerAppsSubnetId: networking.outputs.containerAppsSubnetId
     logAnalyticsWorkspaceId: monitoring.outputs.logAnalyticsWorkspaceId
     logAnalyticsCustomerId: monitoring.outputs.logAnalyticsCustomerId
+    logAnalyticsSharedKey: monitoring.outputs.logAnalyticsSharedKey
     identityId: identity.outputs.identityId
     acrLoginServer: acr.outputs.loginServer
     appInsightsConnectionString: monitoring.outputs.appInsightsConnectionString

@@ -124,11 +124,18 @@ else {
         --parameters entraAppClientId=$EntraAppClientId `
         --parameters entraTenantId=$TenantId `
         --name "$ProjectName-$Environment-$(Get-Date -Format 'yyyyMMdd-HHmmss')" `
-        --output json | ConvertFrom-Json
+        --output json
 
     if ($LASTEXITCODE -ne 0) {
         Write-Error "Deployment failed. Check the Azure portal for details."
     }
+
+    # Fetch the deployment result for outputs
+    $resultJson = az deployment group show `
+        --resource-group $ResourceGroup `
+        --name (az deployment group list --resource-group $ResourceGroup --query "sort_by([],&properties.timestamp)[-1].name" -o tsv) `
+        --output json
+    $result = $resultJson | ConvertFrom-Json
 
     Write-Host "  Deployment succeeded!" -ForegroundColor Green
 

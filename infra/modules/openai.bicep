@@ -52,7 +52,6 @@ resource gpt4oDeployment 'Microsoft.CognitiveServices/accounts/deployments@2024-
       name: 'gpt-4o'
       version: '2024-11-20'
     }
-    raiPolicyName: 'Microsoft.DefaultV2'
   }
 }
 
@@ -70,7 +69,6 @@ resource gpt41Deployment 'Microsoft.CognitiveServices/accounts/deployments@2024-
       name: 'gpt-4.1'
       version: '2025-04-14'
     }
-    raiPolicyName: 'Microsoft.DefaultV2'
   }
 }
 

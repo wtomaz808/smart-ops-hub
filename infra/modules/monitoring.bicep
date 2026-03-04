@@ -58,3 +58,6 @@ output appInsightsInstrumentationKey string = appInsights.properties.Instrumenta
 
 @description('Connection string for Application Insights')
 output appInsightsConnectionString string = appInsights.properties.ConnectionString
+
+@description('Shared key of the Log Analytics workspace')
+output logAnalyticsSharedKey string = logAnalytics.listKeys().primarySharedKey

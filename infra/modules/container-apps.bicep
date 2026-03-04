@@ -18,6 +18,10 @@ param logAnalyticsWorkspaceId string
 @description('Customer ID of the Log Analytics workspace')
 param logAnalyticsCustomerId string
 
+@secure()
+@description('Shared key of the Log Analytics workspace')
+param logAnalyticsSharedKey string
+
 @description('Resource ID of the user-assigned managed identity')
 param identityId string
 
@@ -63,12 +67,19 @@ resource containerAppsEnvironment 'Microsoft.App/managedEnvironments@2024-03-01'
       destination: 'log-analytics'
       logAnalyticsConfiguration: {
         customerId: logAnalyticsCustomerId
+        sharedKey: logAnalyticsSharedKey
       }
     }
     vnetConfiguration: {
       infrastructureSubnetId: containerAppsSubnetId
       internal: false
     }
+    workloadProfiles: [
+      {
+        name: 'Consumption'
+        workloadProfileType: 'Consumption'
+      }
+    ]
     zoneRedundant: false
   }
 }
