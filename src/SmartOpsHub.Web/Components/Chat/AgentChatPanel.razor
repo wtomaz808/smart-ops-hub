@@ -99,8 +99,11 @@
     private IDisposable? _streamCompleteSubscription;
     private IDisposable? _statusSubscription;
 
-    protected override async Task OnInitializedAsync()
+    protected override async Task OnAfterRenderAsync(bool firstRender)
     {
+        if (!firstRender)
+            return;
+
         await ChatService.ConnectAsync(Agent.Id, Guid.NewGuid().ToString());
 
         _messageSubscription = ChatService.OnMessageReceived(Agent.Id, message =>
