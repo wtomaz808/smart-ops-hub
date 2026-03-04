@@ -131,9 +131,10 @@ else {
     }
 
     # Fetch the deployment result for outputs
+    $latestName = az deployment group list --resource-group $ResourceGroup --query "[0].name" -o tsv
     $resultJson = az deployment group show `
         --resource-group $ResourceGroup `
-        --name (az deployment group list --resource-group $ResourceGroup --query "sort_by([],&properties.timestamp)[-1].name" -o tsv) `
+        --name $latestName `
         --output json
     $result = $resultJson | ConvertFrom-Json
 
