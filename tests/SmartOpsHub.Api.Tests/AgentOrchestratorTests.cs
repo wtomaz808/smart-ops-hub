@@ -43,6 +43,17 @@ internal sealed class FakeAiCompletionService : IAiCompletionService
             await Task.CompletedTask;
         }
     }
+
+    public async IAsyncEnumerable<CompletionStreamEvent> StreamWithToolDetectionAsync(IReadOnlyList<ChatMessage> messages,
+        IReadOnlyList<McpToolDefinition>? availableTools = null, string? deploymentName = null, [EnumeratorCancellation] CancellationToken cancellationToken = default)
+    {
+        if (ShouldThrow) throw new InvalidOperationException("AI service unavailable");
+        foreach (var word in NextResponse.Split(' '))
+        {
+            yield return new TextTokenEvent(word + " ");
+            await Task.CompletedTask;
+        }
+    }
 }
 
 internal sealed class FakeMcpGateway : IMcpGateway
@@ -143,6 +154,7 @@ public class AgentOrchestratorTests
             registry ?? new FakeAgentRegistry(),
             ai ?? new FakeAiCompletionService(),
             gateway ?? new FakeMcpGateway(),
+            new McpToolExecutor(gateway ?? new FakeMcpGateway(), NullLogger<McpToolExecutor>.Instance),
             sessionRepo ?? new FakeSessionRepository(),
             convRepo ?? new FakeConversationRepository(),
             NullLogger<AgentOrchestrator>.Instance);

@@ -10,10 +10,12 @@ public sealed partial class AgentOrchestrator(
     IAgentRegistry agentRegistry,
     IAiCompletionService aiCompletionService,
     IMcpGateway mcpGateway,
+    McpToolExecutor mcpToolExecutor,
     ISessionRepository sessionRepository,
     IConversationRepository conversationRepository,
     ILogger<AgentOrchestrator> logger) : IAgentOrchestrator
 {
+    private const int MaxToolRounds = 5;
     private readonly ConcurrentDictionary<string, AgentSession> _sessions = new();
 
     public async Task<AgentSession> CreateSessionAsync(string userId, AgentCategory agentCategory, CancellationToken cancellationToken = default)
@@ -63,7 +65,7 @@ public sealed partial class AgentOrchestrator(
 
         try
         {
-            var tools = await GetToolsForAgent(session.AgentCategory, cancellationToken).ConfigureAwait(false);
+            var (tools, _) = await GetToolsWithMappingForAgent(session.AgentCategory, cancellationToken).ConfigureAwait(false);
 
             var responseText = await aiCompletionService.GetCompletionAsync(
                 session.ConversationHistory,
@@ -113,14 +115,66 @@ public sealed partial class AgentOrchestrator(
         session.AddMessage(userMsg);
         await conversationRepository.AddMessageAsync(sessionId, userMsg, cancellationToken).ConfigureAwait(false);
 
-        var tools = await GetToolsForAgent(session.AgentCategory, cancellationToken).ConfigureAwait(false);
+        var (tools, toolServerMap) = await GetToolsWithMappingForAgent(session.AgentCategory, cancellationToken).ConfigureAwait(false);
 
         var fullResponse = new StringBuilder();
-        await foreach (var token in aiCompletionService.StreamCompletionAsync(
-            session.ConversationHistory, tools, deploymentName, cancellationToken).ConfigureAwait(false))
+
+        for (var round = 0; round < MaxToolRounds; round++)
         {
-            fullResponse.Append(token);
-            yield return token;
+            var toolCalls = new List<AiToolCallRequest>();
+
+            await foreach (var evt in aiCompletionService.StreamWithToolDetectionAsync(
+                session.ConversationHistory, tools, deploymentName, cancellationToken).ConfigureAwait(false))
+            {
+                if (evt is TextTokenEvent textToken)
+                {
+                    fullResponse.Append(textToken.Text);
+                    yield return textToken.Text;
+                }
+                else if (evt is ToolCallsCompleteEvent toolCallEvt)
+                {
+                    toolCalls.AddRange(toolCallEvt.ToolCalls);
+                }
+            }
+
+            if (toolCalls.Count == 0)
+            {
+                break;
+            }
+
+            // Add assistant message with tool calls to conversation
+            var assistantToolMsg = new ChatMessage
+            {
+                Role = ChatRole.Assistant,
+                Content = fullResponse.ToString(),
+                ToolCalls = toolCalls
+            };
+            session.AddMessage(assistantToolMsg);
+            fullResponse.Clear();
+
+            // Execute each tool call and add results
+            foreach (var toolCall in toolCalls)
+            {
+                var serverType = toolServerMap.GetValueOrDefault(toolCall.FunctionName);
+                var mcpToolCall = new McpToolCall
+                {
+                    Id = toolCall.Id,
+                    ToolName = toolCall.FunctionName,
+                    Arguments = toolCall.Arguments
+                };
+
+                LogToolExecution(logger, toolCall.FunctionName, serverType);
+                var result = await mcpToolExecutor.ExecuteAsync(serverType, mcpToolCall, cancellationToken).ConfigureAwait(false);
+
+                var toolResultMsg = new ChatMessage
+                {
+                    Role = ChatRole.Tool,
+                    Content = result.Content,
+                    ToolCallId = toolCall.Id,
+                    ToolName = toolCall.FunctionName
+                };
+                session.AddMessage(toolResultMsg);
+            }
         }
 
         var assistantMessage = new ChatMessage
@@ -165,13 +219,16 @@ public sealed partial class AgentOrchestrator(
         return session ?? throw new KeyNotFoundException($"Session {sessionId} not found.");
     }
 
-    private async Task<IReadOnlyList<McpToolDefinition>?> GetToolsForAgent(AgentCategory agentCategory, CancellationToken cancellationToken)
+    private async Task<(IReadOnlyList<McpToolDefinition>? Tools, Dictionary<string, McpServerType> ToolServerMap)> GetToolsWithMappingForAgent(
+        AgentCategory agentCategory, CancellationToken cancellationToken)
     {
         var agent = agentRegistry.GetAgent(agentCategory);
         if (agent is null || agent.McpServers.Length == 0)
-            return null;
+            return (null, new Dictionary<string, McpServerType>());
 
         var allTools = new List<McpToolDefinition>();
+        var toolServerMap = new Dictionary<string, McpServerType>(StringComparer.OrdinalIgnoreCase);
+
         foreach (var serverType in agent.McpServers)
         {
             try
@@ -179,6 +236,11 @@ public sealed partial class AgentOrchestrator(
                 var client = await mcpGateway.GetClientAsync(serverType, cancellationToken);
                 var tools = await client.ListToolsAsync(cancellationToken);
                 allTools.AddRange(tools);
+
+                foreach (var tool in tools)
+                {
+                    toolServerMap.TryAdd(tool.Name, serverType);
+                }
             }
             catch (Exception ex)
             {
@@ -186,7 +248,7 @@ public sealed partial class AgentOrchestrator(
             }
         }
 
-        return allTools.Count > 0 ? allTools : null;
+        return (allTools.Count > 0 ? allTools : null, toolServerMap);
     }
 
     [LoggerMessage(Level = LogLevel.Information, Message = "Created session {SessionId} for user {UserId} with agent {AgentCategory}")]
@@ -203,4 +265,7 @@ public sealed partial class AgentOrchestrator(
 
     [LoggerMessage(Level = LogLevel.Warning, Message = "Failed to retrieve tools for MCP server {ServerType}, proceeding without tools")]
     private static partial void LogToolRetrievalFailed(ILogger logger, Exception ex, McpServerType serverType);
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "Executing tool {ToolName} via MCP server {ServerType}")]
+    private static partial void LogToolExecution(ILogger logger, string toolName, McpServerType serverType);
 }

@@ -61,6 +61,10 @@ if (authEnabled)
 app.UseAntiforgery();
 
 app.MapStaticAssets();
+if (authEnabled)
+{
+    app.MapControllers();
+}
 app.MapRazorComponents<App>()
     .AddInteractiveServerRenderMode();
 

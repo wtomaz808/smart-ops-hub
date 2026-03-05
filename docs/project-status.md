@@ -4,7 +4,7 @@
 
 ## Overview
 
-AgentOpsHub (formerly Smart Ops Hub) is a cloud-native, AI-enabled operations platform deployed to **Azure Government**. It features a multi-agent chat workspace where users interact with specialized AI agent categories via dedicated chat panels, each backed by Azure OpenAI models and MCP (Model Context Protocol) tool servers.
+AgentOpsHub is a cloud-native, AI-enabled operations platform deployed to **Azure Government**. It features a multi-agent chat workspace where users interact with specialized AI agent categories via dedicated chat panels, each backed by Azure OpenAI models and MCP (Model Context Protocol) tool servers.
 
 ---
 
@@ -253,7 +253,7 @@ These issues were discovered through iterative deployment and may help future tr
 - **MCP server tool execution**: MCP clients have real API integrations but need Azure credentials and API keys configured
 - **Custom domain**: Container App URLs use auto-generated domain; custom domain needs CNAME setup
 - **GitHub Actions variables**: ACR_NAME, container app names, and other variables need to be set in repository settings for CI/CD to deploy automatically
-- **Documentation branding update**: Most docs still reference "Smart Ops Hub" — needs a global rename pass to "AgentOpsHub"
+- **Documentation branding update**: ~~Most docs still reference "Smart Ops Hub"~~ — completed global rename to "AgentOpsHub"
 
 ---
 

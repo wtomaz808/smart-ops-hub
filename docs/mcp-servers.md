@@ -4,7 +4,7 @@
 
 **Model Context Protocol (MCP)** is an open standard for LLM-to-tool communication. It defines how an AI model discovers available tools, invokes them with structured arguments, and receives results — enabling AI agents to take actions beyond text generation.
 
-In Smart Ops Hub, each MCP server exposes domain-specific tools that the Agent Orchestrator can call during a conversation. When Azure OpenAI determines that a user's request requires an action (e.g., "list my Azure resources"), it generates a tool call that the Orchestrator routes through the MCP Gateway to the appropriate server.
+In AgentOpsHub, each MCP server exposes domain-specific tools that the Agent Orchestrator can call during a conversation. When Azure OpenAI determines that a user's request requires an action (e.g., "list my Azure resources"), it generates a tool call that the Orchestrator routes through the MCP Gateway to the appropriate server.
 
 ### MCP Core Concepts
 
@@ -26,7 +26,7 @@ These are modeled in the codebase as `McpToolDefinition`, `McpToolCall`, and `Mc
 
 ## MCP Server Inventory
 
-Smart Ops Hub includes **7 specialized MCP servers** plus a **gateway**:
+AgentOpsHub includes **7 specialized MCP servers** plus a **gateway**:
 
 | # | Server | Project | Description |
 |---|---|---|---|

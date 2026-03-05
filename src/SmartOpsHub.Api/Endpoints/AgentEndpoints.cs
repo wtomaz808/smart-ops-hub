@@ -11,6 +11,14 @@ public static class AgentEndpoints
         var group = app.MapGroup("/api")
             .WithTags("Agents");
 
+        // Only require auth when Entra ID is configured
+        var entraIdSection = app.Configuration.GetSection("AzureAd");
+        if (entraIdSection.Exists() && !string.IsNullOrEmpty(entraIdSection["ClientId"])
+            && entraIdSection["ClientId"] != "YOUR_CLIENT_ID")
+        {
+            group.RequireAuthorization();
+        }
+
         group.MapGet("/agents", (IAgentRegistry registry) =>
         {
             var agents = registry.GetAllAgents();

@@ -2,7 +2,7 @@
 
 ## System Overview
 
-Smart Ops Hub is structured as a three-tier application deployed entirely on **Azure Container Apps** in Azure Government:
+AgentOpsHub is structured as a three-tier application deployed entirely on **Azure Container Apps** in Azure Government:
 
 1. **Blazor Server frontend** — interactive SSR UI with multi-agent chat panels
 2. **ASP.NET Core API** — Minimal API with SignalR `AgentHub`, Agent Orchestrator, and Azure OpenAI integration
@@ -124,7 +124,7 @@ Each MCP server is an independent ASP.NET Core application packaged as a contain
 
 ## Managed Identity Strategy
 
-Smart Ops Hub uses **Azure Managed Identities** exclusively for service-to-service authentication — no passwords or connection strings with secrets are stored:
+AgentOpsHub uses **Azure Managed Identities** exclusively for service-to-service authentication — no passwords or connection strings with secrets are stored:
 
 | Connection | Auth Method |
 |---|---|

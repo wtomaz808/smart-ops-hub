@@ -1,7 +1,7 @@
-# Smart Ops Hub — Copilot Instructions
+# AgentOpsHub — Copilot Instructions
 
 ## Project Overview
-Smart Ops Hub is a cloud-native, AI-enabled operations platform deployed to Azure Government.
+AgentOpsHub is a cloud-native, AI-enabled operations platform deployed to Azure Government.
 It features a multi-agent chat workspace where users interact with specialized AI agents
 (GitHub, Azure DevOps, Azure Ops, .NET Dev, Personal, etc.) simultaneously via side-by-side chat panels.
 

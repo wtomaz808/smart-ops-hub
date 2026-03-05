@@ -84,6 +84,17 @@ builder.Services.AddHealthChecks();
 
 var app = builder.Build();
 
+// --- Apply pending EF Core migrations (when a real database is configured) ---
+if (!app.Environment.IsEnvironment("Testing"))
+{
+    using var scope = app.Services.CreateScope();
+    var dbContext = scope.ServiceProvider.GetRequiredService<SmartOpsHubDbContext>();
+    if (dbContext.Database.IsSqlServer())
+    {
+        await dbContext.Database.MigrateAsync();
+    }
+}
+
 // --- Middleware pipeline ---
 if (app.Environment.IsDevelopment())
 {

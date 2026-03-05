@@ -19,7 +19,7 @@ Rather than switching between tools or asking one agent to do everything, the wo
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│  Smart Ops Hub — Multi-Agent Workspace            [user menu]  │
+│  AgentOpsHub — Multi-Agent Workspace            [user menu]  │
 ├────────────┬────────────┬────────────┬────────────┬─────────────┤
 │  GitHub    │  Azure     │  ADO       │  .NET Dev  │  DevOps     │
 │  Agent     │  Agent     │  Agent     │  Agent     │  Agent      │

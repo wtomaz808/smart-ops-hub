@@ -15,4 +15,10 @@ public interface IAiCompletionService
         IReadOnlyList<McpToolDefinition>? availableTools = null,
         string? deploymentName = null,
         CancellationToken cancellationToken = default);
+
+    IAsyncEnumerable<CompletionStreamEvent> StreamWithToolDetectionAsync(
+        IReadOnlyList<ChatMessage> messages,
+        IReadOnlyList<McpToolDefinition>? availableTools = null,
+        string? deploymentName = null,
+        CancellationToken cancellationToken = default);
 }

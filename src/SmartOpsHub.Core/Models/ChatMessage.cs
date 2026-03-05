@@ -16,6 +16,7 @@ public sealed record ChatMessage
     public DateTimeOffset Timestamp { get; init; } = DateTimeOffset.UtcNow;
     public string? ToolCallId { get; init; }
     public string? ToolName { get; init; }
+    public List<AiToolCallRequest> ToolCalls { get; init; } = [];
     public List<FileAttachment> Attachments { get; init; } = [];
 }
 

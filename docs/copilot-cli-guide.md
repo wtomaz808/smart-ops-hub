@@ -1,6 +1,6 @@
-# Using GitHub Copilot CLI with Smart Ops Hub
+# Using GitHub Copilot CLI with AgentOpsHub
 
-GitHub Copilot CLI is a terminal-native AI assistant that understands your codebase. This guide covers how to use it effectively with the Smart Ops Hub project.
+GitHub Copilot CLI is a terminal-native AI assistant that understands your codebase. This guide covers how to use it effectively with the AgentOpsHub project.
 
 ## Installation
 
@@ -25,7 +25,7 @@ cd C:\DSOP\projects\aiops
 copilot
 ```
 
-On first launch, use `/login` to authenticate with your GitHub account. Copilot respects the project's custom instructions in `.github/copilot-instructions.md`, which includes architecture context, coding conventions, and tech stack details specific to Smart Ops Hub.
+On first launch, use `/login` to authenticate with your GitHub account. Copilot respects the project's custom instructions in `.github/copilot-instructions.md`, which includes architecture context, coding conventions, and tech stack details specific to AgentOpsHub.
 
 ## Key Commands
 
@@ -53,7 +53,7 @@ Use `@` to include specific files in your prompt context:
 @docker-compose.yml Add a new MCP server container for the Kubernetes agent
 ```
 
-This is particularly useful for Smart Ops Hub because the project spans many layers (Blazor, API, MCP servers). Mentioning the relevant files gives Copilot precise context.
+This is particularly useful for AgentOpsHub because the project spans many layers (Blazor, API, MCP servers). Mentioning the relevant files gives Copilot precise context.
 
 ## Plan Mode (Shift+Tab)
 
@@ -70,7 +70,7 @@ GitHub Copilot CLI supports connecting to MCP servers, extending its capabilitie
 
 ### Connecting to Project MCP Servers
 
-If the Smart Ops Hub MCP Gateway is running locally (e.g., via `docker compose up`), you can configure Copilot to use it:
+If the AgentOpsHub MCP Gateway is running locally (e.g., via `docker compose up`), you can configure Copilot to use it:
 
 ```bash
 /mcp
@@ -86,7 +86,7 @@ Copilot ships with GitHub's MCP server by default, giving it access to:
 - Issue and pull request management
 - GitHub Actions workflows and logs
 
-This is especially useful for Smart Ops Hub workflows like checking CI status or reviewing PRs.
+This is especially useful for AgentOpsHub workflows like checking CI status or reviewing PRs.
 
 ## Best Practices
 
@@ -122,7 +122,7 @@ After a series of changes, run `/diff` to see everything that's been modified be
 
 ### 5. Use `/compact` for Long Sessions
 
-Smart Ops Hub has a large codebase. If your conversation grows long, use `/compact` to summarize history and free up context window space.
+AgentOpsHub has a large codebase. If your conversation grows long, use `/compact` to summarize history and free up context window space.
 
 ## Common Workflows
 

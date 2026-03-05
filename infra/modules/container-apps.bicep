@@ -239,8 +239,12 @@ resource apiApp 'Microsoft.App/containerApps@2024-03-01' = {
               value: appInsightsConnectionString
             }
             {
-              name: 'AZURE_OPENAI_ENDPOINT'
+              name: 'AzureOpenAI__Endpoint'
               value: openAiEndpoint
+            }
+            {
+              name: 'AzureOpenAI__DeploymentName'
+              value: 'gpt-4o'
             }
             {
               name: 'AZURE_SQL_SERVER'

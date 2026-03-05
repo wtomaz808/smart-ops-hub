@@ -1,4 +1,4 @@
-# Deployment Guide — Smart Ops Hub
+# Deployment Guide — AgentOpsHub
 
 ## Prerequisites
 

@@ -42,9 +42,17 @@ internal sealed class TestAiCompletionService : IAiCompletionService
         yield return "response";
         await Task.CompletedTask;
     }
+
+    public async IAsyncEnumerable<CompletionStreamEvent> StreamWithToolDetectionAsync(IReadOnlyList<ChatMessage> messages,
+        IReadOnlyList<McpToolDefinition>? availableTools = null, string? deploymentName = null, [EnumeratorCancellation] CancellationToken ct = default)
+    {
+        yield return new TextTokenEvent("Test ");
+        yield return new TextTokenEvent("response");
+        await Task.CompletedTask;
+    }
 }
 
-public sealed class ApiTestFactory : WebApplicationFactory<Program>
+public sealed class ApiTestFactory: WebApplicationFactory<Program>
 {
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
