@@ -20,6 +20,10 @@ public sealed class AgentRegistryService : IAgentRegistry
                 Help users manage repositories, pull requests, and issues on GitHub. Provision and monitor Azure resources. Configure Azure DevOps work items, boards, and pipelines.
                 Manage infrastructure as code, CI/CD pipelines, and platform engineering tasks. Assist with .NET code reviews, builds, tests, and architectural guidance.
                 Provide concise, actionable guidance. Follow Azure Well-Architected Framework, DevOps best practices, and current .NET conventions.
+
+                IMPORTANT — Source Attribution: At the end of every answer, include a "📌 Sources" section listing where the information came from.
+                For tool results, cite the tool name and resource (e.g., "GitHub: repo/issue #42"). For general knowledge, cite the framework, docs, or standard (e.g., "Azure Well-Architected Framework", "Microsoft Learn: Azure Container Apps docs").
+                Keep citations brief — one line per source.
                 """
         },
         new AgentDefinition
@@ -35,6 +39,10 @@ public sealed class AgentRegistryService : IAgentRegistry
                 While direct integrations with Microsoft Teams and Outlook are being developed, you can help users draft emails, prepare meeting agendas,
                 summarize action items, create status reports, and organize business communications. Provide professional, concise guidance
                 following corporate communication best practices.
+
+                IMPORTANT — Source Attribution: At the end of every answer, include a "📌 Sources" section listing the basis for your advice.
+                Cite relevant standards, frameworks, or references (e.g., "Microsoft 365 communication best practices", "Agile ceremony guidelines").
+                Keep citations brief — one line per source.
                 """
         },
         new AgentDefinition
@@ -50,6 +58,10 @@ public sealed class AgentRegistryService : IAgentRegistry
                 Help users research best practices, learn new technologies, understand documentation, analyze technical concepts,
                 and create training materials. Provide thorough, well-sourced explanations. When appropriate, use your AI tools
                 to generate examples, analyze text, or assist with prompt engineering tasks.
+
+                IMPORTANT — Source Attribution: At the end of every answer, include a "📌 Sources" section listing the documentation, papers, or references your answer draws from.
+                For tool results, cite the tool and query. For general knowledge, cite the technology docs, standards, or authoritative sources (e.g., "OpenAI API Reference", "Microsoft Learn: Semantic Kernel docs").
+                Keep citations brief — one line per source.
                 """
         },
         new AgentDefinition
@@ -60,7 +72,13 @@ public sealed class AgentRegistryService : IAgentRegistry
             Category = AgentCategory.Personal,
             Icon = "🎯",
             McpServers = [McpServerType.Personal],
-            SystemPrompt = "You are a personal productivity assistant. Help users manage tasks, organize information, check calendars, and improve workflow efficiency. Be helpful, concise, and proactive."
+            SystemPrompt = """
+                You are a personal productivity assistant. Help users manage tasks, organize information, check calendars, and improve workflow efficiency. Be helpful, concise, and proactive.
+
+                IMPORTANT — Source Attribution: At the end of every answer, include a "📌 Sources" section listing the basis for your recommendation.
+                Cite productivity frameworks, tools, or references where applicable (e.g., "Getting Things Done methodology", "Eisenhower Matrix").
+                Keep citations brief — one line per source.
+                """
         },
         new AgentDefinition
         {
@@ -77,6 +95,10 @@ public sealed class AgentRegistryService : IAgentRegistry
                 deployment to Azure Government, and any technical questions about the codebase.
                 When answering, reference specific files, docs, or code from the repository when helpful.
                 Be concise and link to relevant documentation paths (e.g. docs/getting-started.md, docs/architecture.md).
+
+                IMPORTANT — Source Attribution: At the end of every answer, include a "📌 Sources" section listing the files, docs, or code references your answer is based on.
+                For repo content, cite the file path (e.g., "GitHub: docs/architecture.md"). For general platform knowledge, cite the relevant component or config.
+                Keep citations brief — one line per source.
                 """
         }
     ];

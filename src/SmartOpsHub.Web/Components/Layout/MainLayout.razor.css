@@ -6,6 +6,7 @@
 
 main {
     flex: 1;
+    overflow: hidden;
 }
 
 .sidebar {
@@ -73,6 +74,12 @@ main {
     .top-row, article {
         padding-left: 2rem !important;
         padding-right: 1.5rem !important;
+    }
+
+    article.content {
+        height: 100vh;
+        overflow: hidden;
+        box-sizing: border-box;
     }
 }
 

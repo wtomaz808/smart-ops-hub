@@ -1,7 +1,9 @@
 @using SmartOpsHub.Core.Models
 @using SmartOpsHub.Web.Services
 @using Microsoft.AspNetCore.Components.Forms
+@using Microsoft.JSInterop
 @inject AgentChatService ChatService
+@inject IJSRuntime JS
 @implements IAsyncDisposable
 
 <div class="agent-chat-panel">
@@ -24,6 +26,13 @@
     </div>
 
     <div class="agent-chat-messages" @ref="_messagesContainer">
+        @if (_messages.Count == 0 && !_isStreaming)
+        {
+            <div class="chat-empty-state">
+                <div class="chat-empty-icon">💬</div>
+                <p>Start a conversation with <strong>@Agent.Name</strong></p>
+            </div>
+        }
         @foreach (var message in _messages)
         {
             <ChatMessageBubble Message="@message" />
@@ -63,6 +72,14 @@
             <InputFile OnChange="HandleFileSelected" multiple style="display:none"
                        accept=".cs,.json,.md,.yaml,.yml,.xml,.txt,.bicep,.csproj,.sln,.ps1,.sh,.py,.js,.ts,.html,.css,.razor,.config,.props,.targets,.dockerfile,.tf,.env,.gitignore,.editorconfig,.csv,.log,.sql,.http,.png,.jpg,.jpeg,.gif,.svg,.pdf" />
         </label>
+        <button class="input-action-btn" title="Clear chat history" @onclick="ClearChatHistory"
+                disabled="@(_messages.Count == 0)">
+            🗑️
+        </button>
+        <button class="input-action-btn" title="Share chat via email" @onclick="ShareViaEmail"
+                disabled="@(_messages.Count == 0)">
+            ✉️
+        </button>
         <select class="model-selector" @bind="_selectedModel" title="Select AI model">
             @foreach (var model in ModelOption.All)
             {
@@ -83,6 +100,8 @@
 </div>
 
 @code {
+    private const int MaxStoredMessages = 15;
+
     [Parameter, EditorRequired]
     public AgentDefinition Agent { get; set; } = default!;
 
@@ -98,11 +117,18 @@
     private IDisposable? _streamCompleteSubscription;
     private IDisposable? _statusSubscription;
     private IDisposable? _errorSubscription;
+    private IJSObjectReference? _jsModule;
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (!firstRender)
             return;
+
+        // Load JS module for chat storage
+        _jsModule = await JS.InvokeAsync<IJSObjectReference>("import", "./js/chatStorage.js");
+
+        // Restore persisted messages
+        await LoadMessagesFromStorageAsync();
 
         var connected = await ChatService.ConnectAsync(Agent.Id, Agent.Category);
 
@@ -115,7 +141,11 @@
                 _status = AgentSessionStatus.Working;
             }
             _streamingContent += token;
-            InvokeAsync(StateHasChanged);
+            InvokeAsync(async () =>
+            {
+                StateHasChanged();
+                await ScrollToBottomAsync();
+            });
         });
 
         _streamCompleteSubscription = ChatService.OnStreamComplete(Agent.Id, () =>
@@ -131,7 +161,12 @@
                 _isStreaming = false;
             }
             _status = AgentSessionStatus.Idle;
-            InvokeAsync(StateHasChanged);
+            InvokeAsync(async () =>
+            {
+                await SaveMessagesToStorageAsync();
+                StateHasChanged();
+                await ScrollToBottomAsync();
+            });
         });
 
         _statusSubscription = ChatService.OnStatusChanged(Agent.Id, statusText =>
@@ -191,8 +226,95 @@
         _inputMessage = string.Empty;
         _attachments.Clear();
 
+        await SaveMessagesToStorageAsync();
+        await ScrollToBottomAsync();
         _status = AgentSessionStatus.Thinking;
         await ChatService.SendMessageAsync(Agent.Id, messageText, attachments, _selectedModel);
+    }
+
+    private async Task ScrollToBottomAsync()
+    {
+        if (_jsModule is not null)
+        {
+            try { await _jsModule.InvokeVoidAsync("chatStorage.scrollToBottom", _messagesContainer); }
+            catch { /* element not yet rendered */ }
+        }
+    }
+
+    private async Task ClearChatHistory()
+    {
+        _messages.Clear();
+        if (_jsModule is not null)
+        {
+            await _jsModule.InvokeVoidAsync("chatStorage.clearMessages", Agent.Id);
+        }
+    }
+
+    private async Task ShareViaEmail()
+    {
+        if (_jsModule is null || _messages.Count == 0)
+            return;
+
+        var serializableMessages = _messages.Select(m => new
+        {
+            role = (int)m.Role,
+            content = m.Content,
+            timestamp = m.Timestamp.ToString("o")
+        }).ToArray();
+
+        var mailto = await _jsModule.InvokeAsync<string>("chatStorage.buildShareMailto", Agent.Name, serializableMessages);
+        await JS.InvokeVoidAsync("open", mailto, "_blank");
+    }
+
+    private async Task LoadMessagesFromStorageAsync()
+    {
+        if (_jsModule is null)
+            return;
+
+        try
+        {
+            var stored = await _jsModule.InvokeAsync<StoredMessage[]?>("chatStorage.getMessages", Agent.Id);
+            if (stored is { Length: > 0 })
+            {
+                foreach (var m in stored)
+                {
+                    _messages.Add(new ChatMessage
+                    {
+                        Id = m.Id ?? Guid.NewGuid().ToString(),
+                        Role = (ChatRole)m.Role,
+                        Content = m.Content ?? string.Empty,
+                        Timestamp = DateTimeOffset.TryParse(m.Timestamp, out var ts) ? ts : DateTimeOffset.UtcNow
+                    });
+                }
+            }
+        }
+        catch
+        {
+            // Storage unavailable or corrupt — start fresh
+        }
+    }
+
+    private async Task SaveMessagesToStorageAsync()
+    {
+        if (_jsModule is null)
+            return;
+
+        try
+        {
+            var toStore = _messages.TakeLast(MaxStoredMessages).Select(m => new
+            {
+                id = m.Id,
+                role = (int)m.Role,
+                content = m.Content,
+                timestamp = m.Timestamp.ToString("o")
+            }).ToArray();
+
+            await _jsModule.InvokeVoidAsync("chatStorage.setMessages", Agent.Id, toStore);
+        }
+        catch
+        {
+            // Best effort — don't break the chat if storage fails
+        }
     }
 
     private async Task HandleFileSelected(InputFileChangeEventArgs e)
@@ -268,6 +390,17 @@
         _statusSubscription?.Dispose();
         _errorSubscription?.Dispose();
         await ChatService.DisconnectAsync(Agent.Id);
+        if (_jsModule is not null)
+            await _jsModule.DisposeAsync();
+    }
+
+    // DTO for deserializing stored messages from sessionStorage
+    private sealed record StoredMessage
+    {
+        public string? Id { get; init; }
+        public int Role { get; init; }
+        public string? Content { get; init; }
+        public string? Timestamp { get; init; }
     }
 }
 
@@ -275,7 +408,8 @@
     .agent-chat-panel {
         display: flex;
         flex-direction: column;
-        height: 100%;
+        height: calc(100vh - 2rem);
+        max-height: calc(100vh - 2rem);
         border: 1px solid #dee2e6;
         border-radius: 0.75rem;
         overflow: hidden;
@@ -289,6 +423,7 @@
         padding: 0.75rem 1rem;
         background: #f8f9fa;
         border-bottom: 1px solid #dee2e6;
+        flex-shrink: 0;
     }
 
     .agent-info {
@@ -341,13 +476,72 @@
         display: flex;
         flex-direction: column;
         gap: 0.25rem;
+        min-height: 0;
     }
+
+    .chat-empty-state {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        flex: 1;
+        color: #6c757d;
+        text-align: center;
+        padding: 2rem;
+    }
+
+    .chat-empty-icon {
+        font-size: 2.5rem;
+        margin-bottom: 0.75rem;
+        opacity: 0.5;
+    }
+
+    .chat-empty-state p {
+        margin: 0;
+        font-size: 0.9rem;
+    }
+
+    .attachment-bar {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.4rem;
+        padding: 0.4rem 0.75rem;
+        border-top: 1px solid #dee2e6;
+        background: #f8f9fa;
+        flex-shrink: 0;
+    }
+
+    .attachment-chip {
+        display: flex;
+        align-items: center;
+        gap: 0.3rem;
+        padding: 0.25rem 0.5rem;
+        background: #e9ecef;
+        border-radius: 1rem;
+        font-size: 0.75rem;
+    }
+
+    .attachment-icon { font-size: 0.8rem; }
+    .attachment-name { max-width: 120px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .attachment-size { color: #6c757d; }
+    .attachment-remove {
+        background: none;
+        border: none;
+        cursor: pointer;
+        font-size: 0.9rem;
+        color: #868e96;
+        padding: 0 0.15rem;
+        line-height: 1;
+    }
+    .attachment-remove:hover { color: #c92a2a; }
 
     .agent-chat-input {
         display: flex;
         padding: 0.75rem;
         border-top: 1px solid #dee2e6;
         gap: 0.5rem;
+        align-items: center;
+        flex-shrink: 0;
     }
 
     .agent-chat-input input {
@@ -381,6 +575,32 @@
         background: #e9ecef;
     }
 
+    .input-action-btn {
+        background: none;
+        border: 1px solid transparent;
+        border-radius: 50%;
+        cursor: pointer;
+        font-size: 0.95rem;
+        width: 34px;
+        height: 34px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+        transition: background 0.15s, border-color 0.15s;
+        padding: 0;
+    }
+
+    .input-action-btn:hover:not(:disabled) {
+        background: #e9ecef;
+        border-color: #dee2e6;
+    }
+
+    .input-action-btn:disabled {
+        opacity: 0.35;
+        cursor: not-allowed;
+    }
+
     .model-selector {
         padding: 0.35rem 0.5rem;
         border: 1px solid #dee2e6;
@@ -399,40 +619,7 @@
         box-shadow: 0 0 0 0.15rem rgba(13, 110, 253, 0.15);
     }
 
-    .attachment-bar {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 0.4rem;
-        padding: 0.4rem 0.75rem;
-        border-top: 1px solid #dee2e6;
-        background: #f8f9fa;
-    }
-
-    .attachment-chip {
-        display: flex;
-        align-items: center;
-        gap: 0.3rem;
-        padding: 0.25rem 0.5rem;
-        background: #e9ecef;
-        border-radius: 1rem;
-        font-size: 0.75rem;
-    }
-
-    .attachment-icon { font-size: 0.8rem; }
-    .attachment-name { max-width: 120px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    .attachment-size { color: #6c757d; }
-    .attachment-remove {
-        background: none;
-        border: none;
-        cursor: pointer;
-        font-size: 0.9rem;
-        color: #868e96;
-        padding: 0 0.15rem;
-        line-height: 1;
-    }
-    .attachment-remove:hover { color: #c92a2a; }
-
-    .agent-chat-input button {
+    .agent-chat-input button:not(.input-action-btn) {
         padding: 0.5rem 1.25rem;
         background: #0d6efd;
         color: white;
@@ -440,9 +627,10 @@
         border-radius: 1.5rem;
         cursor: pointer;
         font-size: 0.9rem;
+        flex-shrink: 0;
     }
 
-    .agent-chat-input button:disabled {
+    .agent-chat-input button:not(.input-action-btn):disabled {
         opacity: 0.5;
         cursor: not-allowed;
     }
