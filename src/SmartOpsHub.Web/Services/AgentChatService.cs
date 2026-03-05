@@ -1,3 +1,5 @@
+using System.Net.Http.Json;
+using System.Text.Json;
 using Microsoft.AspNetCore.SignalR.Client;
 using Microsoft.Extensions.Configuration;
 using SmartOpsHub.Core.Models;
@@ -8,22 +10,54 @@ public sealed partial class AgentChatService : IAsyncDisposable
 {
     private readonly IConfiguration _configuration;
     private readonly ILogger<AgentChatService> _logger;
+    private readonly HttpClient _httpClient;
     private readonly Dictionary<string, HubConnection> _connections = new();
+    private readonly Dictionary<string, string> _sessionIds = new();
 
-    public AgentChatService(IConfiguration configuration, ILogger<AgentChatService> logger)
+    public AgentChatService(IConfiguration configuration, ILogger<AgentChatService> logger, IHttpClientFactory httpClientFactory)
     {
         _configuration = configuration;
         _logger = logger;
+        _httpClient = httpClientFactory.CreateClient("AgentApi");
     }
 
-    public async Task ConnectAsync(string agentId, string sessionId)
+    public async Task<bool> ConnectAsync(string agentId, AgentCategory category)
     {
         if (_connections.ContainsKey(agentId))
-            return;
+            return true;
 
         var apiBaseUrl = _configuration.GetValue("ApiBaseUrl", "http://localhost:5100")!.TrimEnd('/');
-        var hubUrl = $"{apiBaseUrl}/hubs/agent";
 
+        // 1. Create a session on the API
+        string? sessionId = null;
+        try
+        {
+            var response = await _httpClient.PostAsJsonAsync($"{apiBaseUrl}/api/sessions", new
+            {
+                UserId = "web-user",
+                AgentCategory = (int)category
+            });
+
+            if (response.IsSuccessStatusCode)
+            {
+                var json = await response.Content.ReadFromJsonAsync<JsonElement>();
+                sessionId = json.GetProperty("sessionId").GetString();
+                LogSessionCreated(_logger, agentId, sessionId!);
+            }
+            else
+            {
+                LogSessionCreateFailed(_logger, agentId, response.StatusCode.ToString());
+                return false;
+            }
+        }
+        catch (Exception ex)
+        {
+            LogSessionCreateFailed(_logger, agentId, ex.Message);
+            return false;
+        }
+
+        // 2. Connect to SignalR hub
+        var hubUrl = $"{apiBaseUrl}/hubs/agent";
         var connection = new HubConnectionBuilder()
             .WithUrl(hubUrl)
             .WithAutomaticReconnect([TimeSpan.Zero, TimeSpan.FromSeconds(2), TimeSpan.FromSeconds(5), TimeSpan.FromSeconds(10)])
@@ -48,44 +82,46 @@ public sealed partial class AgentChatService : IAsyncDisposable
         };
 
         _connections[agentId] = connection;
+        _sessionIds[agentId] = sessionId!;
 
         try
         {
             await connection.StartAsync();
             LogConnected(_logger, agentId);
+
+            // 3. Join the session group so we receive responses
+            await connection.InvokeAsync("JoinSession", sessionId);
+            LogJoinedSession(_logger, agentId, sessionId!);
+            return true;
         }
         catch (Exception ex)
         {
             LogConnectionFailed(_logger, agentId, ex);
+            _connections.Remove(agentId);
+            _sessionIds.Remove(agentId);
+            return false;
         }
     }
 
     public async Task SendMessageAsync(string agentId, string message, List<FileAttachment>? attachments = null, string? model = null)
     {
-        if (_connections.TryGetValue(agentId, out var connection) &&
-            connection.State == HubConnectionState.Connected)
+        if (!_connections.TryGetValue(agentId, out var connection) ||
+            connection.State != HubConnectionState.Connected ||
+            !_sessionIds.TryGetValue(agentId, out var sessionId))
         {
-            var fileData = attachments?.Select(a => new
-            {
-                a.FileName,
-                a.ContentType,
-                a.SizeBytes,
-                a.TextContent,
-                a.Base64Data
-            }).ToList();
-
-            await connection.SendAsync("SendMessage", agentId, message, fileData, model);
-        }
-    }
-
-    public IDisposable OnMessageReceived(string agentId, Action<ChatMessage> handler)
-    {
-        if (_connections.TryGetValue(agentId, out var connection))
-        {
-            return connection.On("ReceiveMessage", handler);
+            return;
         }
 
-        return new NoOpDisposable();
+        var fileData = attachments?.Select(a => new
+        {
+            a.FileName,
+            a.ContentType,
+            a.SizeBytes,
+            a.TextContent,
+            a.Base64Data
+        }).ToList();
+
+        await connection.SendAsync("SendMessage", sessionId, message, fileData, model);
     }
 
     public IDisposable OnStreamToken(string agentId, Action<string> handler)
@@ -94,7 +130,6 @@ public sealed partial class AgentChatService : IAsyncDisposable
         {
             return connection.On("ReceiveStreamToken", handler);
         }
-
         return new NoOpDisposable();
     }
 
@@ -104,17 +139,24 @@ public sealed partial class AgentChatService : IAsyncDisposable
         {
             return connection.On("StreamComplete", handler);
         }
-
         return new NoOpDisposable();
     }
 
-    public IDisposable OnStatusChanged(string agentId, Action<AgentSessionStatus> handler)
+    public IDisposable OnStatusChanged(string agentId, Action<string> handler)
     {
         if (_connections.TryGetValue(agentId, out var connection))
         {
-            return connection.On("StatusChanged", handler);
+            return connection.On("StatusUpdate", handler);
         }
+        return new NoOpDisposable();
+    }
 
+    public IDisposable OnError(string agentId, Action<string> handler)
+    {
+        if (_connections.TryGetValue(agentId, out var connection))
+        {
+            return connection.On("ReceiveError", handler);
+        }
         return new NoOpDisposable();
     }
 
@@ -122,6 +164,11 @@ public sealed partial class AgentChatService : IAsyncDisposable
     {
         if (_connections.Remove(agentId, out var connection))
         {
+            if (_sessionIds.TryGetValue(agentId, out var sessionId))
+            {
+                try { await connection.InvokeAsync("LeaveSession", sessionId); } catch { /* best effort */ }
+            }
+            _sessionIds.Remove(agentId);
             await connection.DisposeAsync();
             LogDisconnected(_logger, agentId);
         }
@@ -134,7 +181,14 @@ public sealed partial class AgentChatService : IAsyncDisposable
             await connection.DisposeAsync();
         }
         _connections.Clear();
+        _sessionIds.Clear();
     }
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "Created API session for agent {AgentId}: {SessionId}")]
+    private static partial void LogSessionCreated(ILogger logger, string agentId, string sessionId);
+
+    [LoggerMessage(Level = LogLevel.Error, Message = "Failed to create session for agent {AgentId}: {Error}")]
+    private static partial void LogSessionCreateFailed(ILogger logger, string agentId, string error);
 
     [LoggerMessage(Level = LogLevel.Warning, Message = "Reconnecting to agent hub {AgentId}")]
     private static partial void LogReconnecting(ILogger logger, string agentId, Exception? exception);
@@ -147,6 +201,9 @@ public sealed partial class AgentChatService : IAsyncDisposable
 
     [LoggerMessage(Level = LogLevel.Information, Message = "Connected to agent hub {AgentId}")]
     private static partial void LogConnected(ILogger logger, string agentId);
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "Joined session for agent {AgentId}: {SessionId}")]
+    private static partial void LogJoinedSession(ILogger logger, string agentId, string sessionId);
 
     [LoggerMessage(Level = LogLevel.Error, Message = "Failed to connect to agent hub {AgentId}")]
     private static partial void LogConnectionFailed(ILogger logger, string agentId, Exception exception);

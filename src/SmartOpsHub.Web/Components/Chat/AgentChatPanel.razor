@@ -94,23 +94,17 @@
     private bool _isStreaming;
     private string _selectedModel = ModelOption.Default.DeploymentName;
     private ElementReference _messagesContainer;
-    private IDisposable? _messageSubscription;
     private IDisposable? _streamTokenSubscription;
     private IDisposable? _streamCompleteSubscription;
     private IDisposable? _statusSubscription;
+    private IDisposable? _errorSubscription;
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (!firstRender)
             return;
 
-        await ChatService.ConnectAsync(Agent.Id, Guid.NewGuid().ToString());
-
-        _messageSubscription = ChatService.OnMessageReceived(Agent.Id, message =>
-        {
-            _messages.Add(message);
-            InvokeAsync(StateHasChanged);
-        });
+        var connected = await ChatService.ConnectAsync(Agent.Id, Agent.Category);
 
         _streamTokenSubscription = ChatService.OnStreamToken(Agent.Id, token =>
         {
@@ -135,16 +129,41 @@
                 });
                 _streamingContent = string.Empty;
                 _isStreaming = false;
-                _status = AgentSessionStatus.Idle;
-                InvokeAsync(StateHasChanged);
             }
-        });
-
-        _statusSubscription = ChatService.OnStatusChanged(Agent.Id, status =>
-        {
-            _status = status;
+            _status = AgentSessionStatus.Idle;
             InvokeAsync(StateHasChanged);
         });
+
+        _statusSubscription = ChatService.OnStatusChanged(Agent.Id, statusText =>
+        {
+            if (Enum.TryParse<AgentSessionStatus>(statusText, out var parsed))
+                _status = parsed;
+            InvokeAsync(StateHasChanged);
+        });
+
+        _errorSubscription = ChatService.OnError(Agent.Id, error =>
+        {
+            _status = AgentSessionStatus.Error;
+            _isStreaming = false;
+            _messages.Add(new ChatMessage
+            {
+                Role = ChatRole.Assistant,
+                Content = $"⚠️ Error: {error}"
+            });
+            InvokeAsync(StateHasChanged);
+        });
+
+        if (!connected)
+        {
+            _status = AgentSessionStatus.Error;
+            _messages.Add(new ChatMessage
+            {
+                Role = ChatRole.Assistant,
+                Content = "⚠️ Failed to connect to the API. Check that the backend is running."
+            });
+        }
+
+        await InvokeAsync(StateHasChanged);
     }
 
     private async Task SendMessage()
@@ -244,10 +263,10 @@
 
     public async ValueTask DisposeAsync()
     {
-        _messageSubscription?.Dispose();
         _streamTokenSubscription?.Dispose();
         _streamCompleteSubscription?.Dispose();
         _statusSubscription?.Dispose();
+        _errorSubscription?.Dispose();
         await ChatService.DisconnectAsync(Agent.Id);
     }
 }

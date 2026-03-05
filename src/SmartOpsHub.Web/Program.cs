@@ -25,9 +25,13 @@ builder.Services.AddScoped<AgentChatService>();
 builder.Services.AddSingleton<AgentSessionManager>();
 
 // HttpClient for API communication
+builder.Services.AddHttpClient("AgentApi", client =>
+{
+    client.BaseAddress = new Uri(builder.Configuration.GetValue("ApiBaseUrl", "http://localhost:5100/")!);
+});
 builder.Services.AddHttpClient<AgentSessionManager>(client =>
 {
-    client.BaseAddress = new Uri(builder.Configuration.GetValue("ApiBaseUrl", "https://localhost:5001/")!);
+    client.BaseAddress = new Uri(builder.Configuration.GetValue("ApiBaseUrl", "http://localhost:5100/")!);
 });
 
 // Add services to the container.
