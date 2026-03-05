@@ -1,9 +1,11 @@
 @using SmartOpsHub.Core.Models
 @using SmartOpsHub.Web.Services
+@using Microsoft.AspNetCore.Components.Authorization
 @using Microsoft.AspNetCore.Components.Forms
 @using Microsoft.JSInterop
 @inject AgentChatService ChatService
 @inject IJSRuntime JS
+@inject AuthenticationStateProvider AuthStateProvider
 @implements IAsyncDisposable
 
 <div class="agent-chat-panel">
@@ -112,6 +114,7 @@
     private string _streamingContent = string.Empty;
     private bool _isStreaming;
     private string _selectedModel = ModelOption.Default.DeploymentName;
+    private string _userId = "default";
     private ElementReference _messagesContainer;
     private IDisposable? _streamTokenSubscription;
     private IDisposable? _streamCompleteSubscription;
@@ -123,6 +126,17 @@
     {
         if (!firstRender)
             return;
+
+        // Resolve user identity (Entra ID OID when authenticated, "default" otherwise)
+        try
+        {
+            var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+            var oid = authState.User.FindFirst("http://schemas.microsoft.com/identity/claims/objectidentifier")?.Value
+                      ?? authState.User.FindFirst("oid")?.Value;
+            if (!string.IsNullOrEmpty(oid))
+                _userId = oid;
+        }
+        catch { /* auth not configured — use default */ }
 
         // Load JS module for chat storage
         _jsModule = await JS.InvokeAsync<IJSObjectReference>("import", "./js/chatStorage.js");
@@ -246,7 +260,7 @@
         _messages.Clear();
         if (_jsModule is not null)
         {
-            await _jsModule.InvokeVoidAsync("chatStorage.clearMessages", Agent.Id);
+            await _jsModule.InvokeVoidAsync("chatStorage.clearMessages", _userId, Agent.Id);
         }
     }
 
@@ -273,7 +287,7 @@
 
         try
         {
-            var stored = await _jsModule.InvokeAsync<StoredMessage[]?>("chatStorage.getMessages", Agent.Id);
+            var stored = await _jsModule.InvokeAsync<StoredMessage[]?>("chatStorage.getMessages", _userId, Agent.Id);
             if (stored is { Length: > 0 })
             {
                 foreach (var m in stored)
@@ -309,7 +323,7 @@
                 timestamp = m.Timestamp.ToString("o")
             }).ToArray();
 
-            await _jsModule.InvokeVoidAsync("chatStorage.setMessages", Agent.Id, toStore);
+            await _jsModule.InvokeVoidAsync("chatStorage.setMessages", _userId, Agent.Id, toStore);
         }
         catch
         {

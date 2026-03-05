@@ -1,26 +1,27 @@
-// Chat history persistence via sessionStorage (survives refresh, clears on tab close)
+// Chat history persistence via localStorage (survives browser close)
+// Storage keys include userId for multi-user readiness (Entra ID)
 export const chatStorage = {
-    getMessages(agentId) {
+    getMessages(userId, agentId) {
         try {
-            const key = `aoh-chat-${agentId}`;
-            const data = sessionStorage.getItem(key);
+            const key = `aoh-chat-${userId}-${agentId}`;
+            const data = localStorage.getItem(key);
             return data ? JSON.parse(data) : [];
         } catch {
             return [];
         }
     },
 
-    setMessages(agentId, messages) {
+    setMessages(userId, agentId, messages) {
         try {
-            const key = `aoh-chat-${agentId}`;
+            const key = `aoh-chat-${userId}-${agentId}`;
             const trimmed = messages.slice(-15);
-            sessionStorage.setItem(key, JSON.stringify(trimmed));
+            localStorage.setItem(key, JSON.stringify(trimmed));
         } catch { /* storage full or unavailable */ }
     },
 
-    clearMessages(agentId) {
+    clearMessages(userId, agentId) {
         try {
-            sessionStorage.removeItem(`aoh-chat-${agentId}`);
+            localStorage.removeItem(`aoh-chat-${userId}-${agentId}`);
         } catch { /* ignore */ }
     },
 
