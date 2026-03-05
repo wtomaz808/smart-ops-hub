@@ -25,6 +25,9 @@ param logAnalyticsSharedKey string
 @description('Resource ID of the user-assigned managed identity')
 param identityId string
 
+@description('Client ID of the user-assigned managed identity')
+param identityClientId string
+
 @description('Login server URL for ACR')
 param acrLoginServer string
 
@@ -278,6 +281,14 @@ resource apiApp 'Microsoft.App/containerApps@2024-03-01' = {
               name: 'AzureAd__ClientId'
               value: entraAppClientId
             }
+            {
+              name: 'AZURE_CLIENT_ID'
+              value: identityClientId
+            }
+            {
+              name: 'AZURE_AUTHORITY_HOST'
+              value: 'https://login.microsoftonline.us'
+            }
           ]
           probes: [
             {
@@ -361,6 +372,14 @@ resource mcpGatewayApp 'Microsoft.App/containerApps@2024-03-01' = {
             {
               name: 'AZURE_AI_SERVICES_ENDPOINT'
               value: aiServicesEndpoint
+            }
+            {
+              name: 'AZURE_CLIENT_ID'
+              value: identityClientId
+            }
+            {
+              name: 'AZURE_AUTHORITY_HOST'
+              value: 'https://login.microsoftonline.us'
             }
           ]
           probes: [

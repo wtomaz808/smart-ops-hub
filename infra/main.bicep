@@ -160,6 +160,7 @@ module containerApps 'modules/container-apps.bicep' = {
     logAnalyticsCustomerId: monitoring.outputs.logAnalyticsCustomerId
     logAnalyticsSharedKey: monitoring.outputs.logAnalyticsSharedKey
     identityId: identity.outputs.identityId
+    identityClientId: identity.outputs.clientId
     acrLoginServer: acr.outputs.loginServer
     appInsightsConnectionString: monitoring.outputs.appInsightsConnectionString
     openAiEndpoint: openai.outputs.openAiEndpoint

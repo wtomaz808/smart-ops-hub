@@ -72,6 +72,8 @@ builder.Services.AddSingleton<IMcpGateway>(sp =>
 var app = builder.Build();
 
 app.MapGet("/health", () => Results.Ok(new { Status = "Healthy", Service = "SmartOpsHub.Mcp.Gateway" }));
+app.MapGet("/healthz", () => Results.Ok("Healthy"));
+app.MapGet("/ready", () => Results.Ok("Ready"));
 
 app.MapGet("/gateway/health", async (IMcpGateway gateway, CancellationToken ct) =>
 {

@@ -48,6 +48,11 @@ public static class HealthEndpoints
         .WithName("ReadinessCheck")
         .WithSummary("Readiness check including dependencies");
 
+        // Container Apps readiness probe endpoint
+        app.MapGet("/ready", () => Results.Ok("Ready"))
+        .WithTags("Health")
+        .ExcludeFromDescription();
+
         return app;
     }
 }

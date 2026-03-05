@@ -32,7 +32,15 @@ public sealed class AzureOpenAiCompletionService : IAiCompletionService
 
         _isConfigured = true;
         var credential = new DefaultAzureCredential();
-        _openAiClient = new AzureOpenAIClient(new Uri(endpoint), credential);
+
+        // Detect Azure Gov endpoints and set the correct token audience
+        var clientOptions = new AzureOpenAIClientOptions();
+        if (endpoint.Contains(".azure.us", StringComparison.OrdinalIgnoreCase))
+        {
+            clientOptions.Audience = AzureOpenAIAudience.AzureGovernment;
+        }
+
+        _openAiClient = new AzureOpenAIClient(new Uri(endpoint), credential, clientOptions);
     }
 
     public async Task<string> GetCompletionAsync(
