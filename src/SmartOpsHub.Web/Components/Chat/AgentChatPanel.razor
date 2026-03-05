@@ -199,7 +199,11 @@
                 Role = ChatRole.Assistant,
                 Content = $"⚠️ Error: {error}"
             });
-            InvokeAsync(StateHasChanged);
+            InvokeAsync(async () =>
+            {
+                await SaveMessagesToStorageAsync();
+                StateHasChanged();
+            });
         });
 
         if (!connected)
