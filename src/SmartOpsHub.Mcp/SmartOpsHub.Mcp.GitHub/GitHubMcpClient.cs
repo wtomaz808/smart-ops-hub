@@ -73,8 +73,11 @@ public sealed partial class GitHubMcpClient(GitHubClient github, ILogger<GitHubM
             ToolCallId = toolCall.Id,
             Content = JsonSerializer.Serialize(new
             {
-                issue.Id, issue.Number, issue.Title,
-                State = issue.State.StringValue, HtmlUrl = issue.HtmlUrl
+                issue.Id,
+                issue.Number,
+                issue.Title,
+                State = issue.State.StringValue,
+                HtmlUrl = issue.HtmlUrl
             }, s_jsonOptions)
         };
     }
@@ -99,8 +102,11 @@ public sealed partial class GitHubMcpClient(GitHubClient github, ILogger<GitHubM
         var issues = await github.Issue.GetAllForRepository(owner, repo, request);
         var result = issues.Select(i => new
         {
-            i.Id, i.Number, i.Title,
-            State = i.State.StringValue, HtmlUrl = i.HtmlUrl
+            i.Id,
+            i.Number,
+            i.Title,
+            State = i.State.StringValue,
+            HtmlUrl = i.HtmlUrl
         }).ToList();
 
         LogToolExecuted("github_list_issues", owner, repo);
@@ -131,8 +137,11 @@ public sealed partial class GitHubMcpClient(GitHubClient github, ILogger<GitHubM
             ToolCallId = toolCall.Id,
             Content = JsonSerializer.Serialize(new
             {
-                pr.Id, pr.Number, pr.Title,
-                State = pr.State.StringValue, HtmlUrl = pr.HtmlUrl
+                pr.Id,
+                pr.Number,
+                pr.Title,
+                State = pr.State.StringValue,
+                HtmlUrl = pr.HtmlUrl
             }, s_jsonOptions)
         };
     }
@@ -157,8 +166,11 @@ public sealed partial class GitHubMcpClient(GitHubClient github, ILogger<GitHubM
         var prs = await github.PullRequest.GetAllForRepository(owner, repo, request);
         var result = prs.Select(p => new
         {
-            p.Id, p.Number, p.Title,
-            State = p.State.StringValue, HtmlUrl = p.HtmlUrl
+            p.Id,
+            p.Number,
+            p.Title,
+            State = p.State.StringValue,
+            HtmlUrl = p.HtmlUrl
         }).ToList();
 
         LogToolExecuted("github_list_pull_requests", owner, repo);
@@ -182,11 +194,17 @@ public sealed partial class GitHubMcpClient(GitHubClient github, ILogger<GitHubM
             ToolCallId = toolCall.Id,
             Content = JsonSerializer.Serialize(new
             {
-                repository.Id, repository.Name, repository.FullName,
-                repository.Description, HtmlUrl = repository.HtmlUrl,
-                repository.Language, repository.StargazersCount,
-                repository.ForksCount, repository.OpenIssuesCount,
-                repository.DefaultBranch, repository.Private
+                repository.Id,
+                repository.Name,
+                repository.FullName,
+                repository.Description,
+                HtmlUrl = repository.HtmlUrl,
+                repository.Language,
+                repository.StargazersCount,
+                repository.ForksCount,
+                repository.OpenIssuesCount,
+                repository.DefaultBranch,
+                repository.Private
             }, s_jsonOptions)
         };
     }
@@ -209,8 +227,10 @@ public sealed partial class GitHubMcpClient(GitHubClient github, ILogger<GitHubM
         var results = await github.Search.SearchCode(searchRequest);
         var items = results.Items.Select(i => new
         {
-            i.Name, i.Path,
-            Repository = i.Repository.FullName, HtmlUrl = i.HtmlUrl
+            i.Name,
+            i.Path,
+            Repository = i.Repository.FullName,
+            HtmlUrl = i.HtmlUrl
         }).ToList();
 
         LogToolExecuted("github_search_code", query, "");

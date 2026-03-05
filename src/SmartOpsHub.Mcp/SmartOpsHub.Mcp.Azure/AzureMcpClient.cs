@@ -184,7 +184,11 @@ public sealed partial class AzureMcpClient(
                     {
                         Metric = metric.Name,
                         Timestamp = val.TimeStamp,
-                        val.Average, val.Minimum, val.Maximum, val.Total, val.Count
+                        val.Average,
+                        val.Minimum,
+                        val.Maximum,
+                        val.Total,
+                        val.Count
                     });
                 }
             }

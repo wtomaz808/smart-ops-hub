@@ -53,7 +53,7 @@ internal sealed class TestAiCompletionService : IAiCompletionService
     }
 }
 
-public sealed class SmartOpsHubTestFactory: WebApplicationFactory<Program>
+public sealed class SmartOpsHubTestFactory : WebApplicationFactory<Program>
 {
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {

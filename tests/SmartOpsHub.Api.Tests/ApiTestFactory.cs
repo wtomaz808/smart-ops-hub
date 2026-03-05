@@ -52,7 +52,7 @@ internal sealed class TestAiCompletionService : IAiCompletionService
     }
 }
 
-public sealed class ApiTestFactory: WebApplicationFactory<Program>
+public sealed class ApiTestFactory : WebApplicationFactory<Program>
 {
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
