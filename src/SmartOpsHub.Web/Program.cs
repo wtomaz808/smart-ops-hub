@@ -8,9 +8,11 @@ using SmartOpsHub.Web.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Authentication (placeholder config – configure AzureAd section in appsettings when ready)
+// Authentication (configure AzureAd section in appsettings when ready)
 var azureAdSection = builder.Configuration.GetSection("AzureAd");
-var authEnabled = azureAdSection.Exists() && !string.IsNullOrEmpty(azureAdSection["ClientId"]);
+var authEnabled = azureAdSection.Exists()
+    && !string.IsNullOrEmpty(azureAdSection["ClientId"])
+    && azureAdSection["ClientId"] != "YOUR_CLIENT_ID";
 if (authEnabled)
 {
     builder.Services.AddMicrosoftIdentityWebAppAuthentication(builder.Configuration);
