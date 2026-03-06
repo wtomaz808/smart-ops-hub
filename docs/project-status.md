@@ -1,6 +1,6 @@
 # AgentOpsHub — Project Status
 
-> Last updated: 2026-03-04
+> Last updated: 2026-03-06
 
 ## Overview
 
@@ -37,7 +37,14 @@ AgentOpsHub is a cloud-native, AI-enabled operations platform deployed to **Azur
 | 23 | `7dc62ec` | Add health endpoints and fix HTTPS redirect for Container Apps |
 | 24 | `ce09531` | Rename Azure resources to `aoh-{type}-{env}` convention |
 | 25 | `4f81d7a` | deploy.ps1 JMESPath query fix for Windows compatibility |
-| 26 | `11b8cf5` | Move SignalR connect to `OnAfterRenderAsync` to prevent SSR timeout |
+| 27 | `3379ad0` | Azure OpenAI connectivity, EF Core migrations, Entra ID auth, MCP tool loop |
+| 28 | `ffb6021` | Wire up agent chat — session creation, SignalR join, and streaming |
+| 29 | `0477f74` | Downgrade SignalR.Client to 9.x and simplify Blazor routing |
+| 30 | `c8b5a00` | Chat persistence, clear, share, source attribution, and fixed-frame layout |
+| 31 | `0938a49` | Upgrade chat storage to localStorage with per-user keying |
+| 32 | `df6e2d1` | Persist error messages to localStorage in chat panel |
+| 33 | `348592c` | Fix dotnet format lint issues for CI |
+| 34 | `0e45bd8` | DB-backed chat persistence with session resume |
 
 ---
 
@@ -238,22 +245,29 @@ These issues were discovered through iterative deployment and may help future tr
 - Dual model selector (GPT-4.1 / GPT-4o) per agent
 - File upload (5 MB, 25+ text types)
 - Streaming responses via SignalR
+- **DB-backed chat persistence** — messages survive browser close/reopen via `ConversationLog` table
+- **Session resume** — `FindOrCreateSessionAsync` reuses existing session per user+agent category
+- Chat history clear button, share via email
 - Admin settings page
 - Add Agent creation page
 - All 3 Container Apps running in Azure Gov
 - Entra ID app registration configured
 - 147 tests passing, 0 warnings
-- CI/CD workflows (ci.yml, infra.yml, cd.yml)
+- CI passing (lint + build + test + Docker validation)
 - Local Docker development with `start-local.ps1`
 
-### 🔄 In Progress / Next Steps
-- **Azure OpenAI connectivity**: Models are deployed but agents haven't been tested end-to-end with live Azure OpenAI responses yet
-- **EF Core database migrations**: SQL schema exists in code but hasn't been applied to the deployed Azure SQL instance
-- **Entra ID auth activation**: App registration exists; MSAL middleware is conditional and needs `AzureAd` config section populated with the client secret
-- **MCP server tool execution**: MCP clients have real API integrations but need Azure credentials and API keys configured
-- **Custom domain**: Container App URLs use auto-generated domain; custom domain needs CNAME setup
-- **GitHub Actions variables**: ACR_NAME, container app names, and other variables need to be set in repository settings for CI/CD to deploy automatically
-- **Documentation branding update**: ~~Most docs still reference "Smart Ops Hub"~~ — completed global rename to "AgentOpsHub"
+### 🔴 Blocking: CD Pipeline
+The CD workflow (`cd.yml`) triggers on CI success but **fails** because the GitHub Actions variable `ACR_NAME` is set to `acrsmartopshubdev` which doesn't match the actual ACR (`aohacrdev`). Fix the GitHub repo variables or push images manually.
+
+### 🔄 Next Steps / Todo
+1. **Fix CD pipeline** — Update GitHub Actions variables: `ACR_NAME=aohacrdev`, `ACR_LOGIN_SERVER=aohacrdev.azurecr.us`, verify container app names match actual resources
+2. **Push Docker images to Azure** — Either fix CD or push manually to get updated code into Azure Container Apps
+3. **Test DB persistence in Azure** — Verify chat messages persist across browser close on the deployed app (requires Azure SQL connectivity + EF migrations applied)
+4. **EF Core database migrations** — SQL schema exists in code but may not be applied to the deployed Azure SQL instance
+5. **Azure OpenAI end-to-end test** — Models are deployed; need full round-trip test (user message → OpenAI → MCP tools → streaming response)
+6. **Entra ID auth activation** — App registration exists; MSAL middleware is conditional, needs `AzureAd` config section populated
+7. **MCP server tool execution** — MCP clients have real API integrations but need Azure credentials and API keys configured
+8. **Line ending normalization** — Add `.gitattributes` with `* text=auto` to prevent LF/CRLF warnings across Windows/Linux
 
 ---
 
