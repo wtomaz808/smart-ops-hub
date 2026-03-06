@@ -91,6 +91,12 @@ internal sealed class FakeSessionRepository : ISessionRepository
         return Task.FromResult(session);
     }
 
+    public Task<AgentSession?> GetByUserAndCategoryAsync(string userId, AgentCategory agentCategory, CancellationToken cancellationToken = default)
+    {
+        var session = _sessions.Values.FirstOrDefault(s => s.UserId == userId && s.AgentCategory == agentCategory);
+        return Task.FromResult(session);
+    }
+
     public Task<IReadOnlyList<AgentSession>> GetByUserIdAsync(string userId, CancellationToken cancellationToken = default)
         => Task.FromResult<IReadOnlyList<AgentSession>>(_sessions.Values.Where(s => s.UserId == userId).ToList());
 

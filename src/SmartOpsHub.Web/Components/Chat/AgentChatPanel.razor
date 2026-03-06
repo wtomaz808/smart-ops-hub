@@ -138,13 +138,27 @@
         }
         catch { /* auth not configured — use default */ }
 
-        // Load JS module for chat storage
+        // Load JS module for chat storage (used as fallback and for scrolling)
         _jsModule = await JS.InvokeAsync<IJSObjectReference>("import", "./js/chatStorage.js");
 
-        // Restore persisted messages
-        await LoadMessagesFromStorageAsync();
+        // Connect to API (finds or creates session), passing real user ID
+        var connected = await ChatService.ConnectAsync(Agent.Id, Agent.Category, _userId);
 
-        var connected = await ChatService.ConnectAsync(Agent.Id, Agent.Category);
+        // Load chat history from DB
+        if (connected)
+        {
+            var history = await ChatService.LoadHistoryAsync(Agent.Id);
+            if (history.Count > 0)
+            {
+                _messages.AddRange(history);
+            }
+        }
+
+        // Fall back to localStorage if DB returned nothing
+        if (_messages.Count == 0)
+        {
+            await LoadMessagesFromStorageAsync();
+        }
 
         _streamTokenSubscription = ChatService.OnStreamToken(Agent.Id, token =>
         {
@@ -266,6 +280,9 @@
         {
             await _jsModule.InvokeVoidAsync("chatStorage.clearMessages", _userId, Agent.Id);
         }
+
+        // End the current session so a fresh one is created on next connect
+        await ChatService.DisconnectAsync(Agent.Id);
     }
 
     private async Task ShareViaEmail()

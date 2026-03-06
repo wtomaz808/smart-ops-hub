@@ -51,6 +51,14 @@ public static class AgentEndpoints
         .WithName("CreateSession")
         .WithSummary("Create a new agent session");
 
+        group.MapPost("/sessions/find-or-create", async (CreateSessionRequest request, IAgentOrchestrator orchestrator, CancellationToken ct) =>
+        {
+            var session = await orchestrator.FindOrCreateSessionAsync(request.UserId, request.AgentCategory, ct);
+            return Results.Ok(new SessionResponse(session));
+        })
+        .WithName("FindOrCreateSession")
+        .WithSummary("Find an existing session or create a new one for the user and agent category");
+
         group.MapGet("/sessions/{id}", async (string id, IAgentOrchestrator orchestrator, CancellationToken ct) =>
         {
             var session = await orchestrator.GetSessionAsync(id, ct);
@@ -60,6 +68,14 @@ public static class AgentEndpoints
         })
         .WithName("GetSession")
         .WithSummary("Get session information");
+
+        group.MapGet("/sessions/{id}/messages", async (string id, IConversationRepository conversationRepo, CancellationToken ct) =>
+        {
+            var messages = await conversationRepo.GetMessagesAsync(id, ct);
+            return Results.Ok(messages.Where(m => m.Role != ChatRole.System).Select(m => new MessageResponse(m)));
+        })
+        .WithName("GetSessionMessages")
+        .WithSummary("Get chat message history for a session");
 
         group.MapDelete("/sessions/{id}", async (string id, IAgentOrchestrator orchestrator, CancellationToken ct) =>
         {
@@ -98,5 +114,21 @@ public sealed record SessionResponse
         CreatedAt = session.CreatedAt;
         LastActivityAt = session.LastActivityAt;
         MessageCount = session.ConversationHistory.Count;
+    }
+}
+
+public sealed record MessageResponse
+{
+    public string Id { get; init; }
+    public int Role { get; init; }
+    public string Content { get; init; }
+    public string Timestamp { get; init; }
+
+    public MessageResponse(ChatMessage message)
+    {
+        Id = message.Id;
+        Role = (int)message.Role;
+        Content = message.Content;
+        Timestamp = message.Timestamp.ToString("o");
     }
 }

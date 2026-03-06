@@ -21,20 +21,20 @@ public sealed partial class AgentChatService : IAsyncDisposable
         _httpClient = httpClientFactory.CreateClient("AgentApi");
     }
 
-    public async Task<bool> ConnectAsync(string agentId, AgentCategory category)
+    public async Task<bool> ConnectAsync(string agentId, AgentCategory category, string userId = "web-user")
     {
         if (_connections.ContainsKey(agentId))
             return true;
 
         var apiBaseUrl = _configuration.GetValue("ApiBaseUrl", "http://localhost:5100")!.TrimEnd('/');
 
-        // 1. Create a session on the API
+        // 1. Find existing session or create a new one
         string? sessionId = null;
         try
         {
-            var response = await _httpClient.PostAsJsonAsync($"{apiBaseUrl}/api/sessions", new
+            var response = await _httpClient.PostAsJsonAsync($"{apiBaseUrl}/api/sessions/find-or-create", new
             {
-                UserId = "web-user",
+                UserId = userId,
                 AgentCategory = (int)category
             });
 
@@ -100,6 +100,36 @@ public sealed partial class AgentChatService : IAsyncDisposable
             _connections.Remove(agentId);
             _sessionIds.Remove(agentId);
             return false;
+        }
+    }
+
+    public async Task<List<ChatMessage>> LoadHistoryAsync(string agentId)
+    {
+        if (!_sessionIds.TryGetValue(agentId, out var sessionId))
+            return [];
+
+        var apiBaseUrl = _configuration.GetValue("ApiBaseUrl", "http://localhost:5100")!.TrimEnd('/');
+
+        try
+        {
+            var messages = await _httpClient.GetFromJsonAsync<List<HistoryMessage>>(
+                $"{apiBaseUrl}/api/sessions/{sessionId}/messages");
+
+            if (messages is null or { Count: 0 })
+                return [];
+
+            return messages.Select(m => new ChatMessage
+            {
+                Id = m.Id ?? Guid.NewGuid().ToString(),
+                Role = (ChatRole)m.Role,
+                Content = m.Content ?? string.Empty,
+                Timestamp = DateTimeOffset.TryParse(m.Timestamp, out var ts) ? ts : DateTimeOffset.UtcNow
+            }).ToList();
+        }
+        catch (Exception ex)
+        {
+            LogHistoryLoadFailed(_logger, agentId, ex.Message);
+            return [];
         }
     }
 
@@ -211,8 +241,19 @@ public sealed partial class AgentChatService : IAsyncDisposable
     [LoggerMessage(Level = LogLevel.Information, Message = "Disconnected from agent hub {AgentId}")]
     private static partial void LogDisconnected(ILogger logger, string agentId);
 
+    [LoggerMessage(Level = LogLevel.Warning, Message = "Failed to load chat history for agent {AgentId}: {Error}")]
+    private static partial void LogHistoryLoadFailed(ILogger logger, string agentId, string error);
+
     private sealed class NoOpDisposable : IDisposable
     {
         public void Dispose() { }
+    }
+
+    private sealed record HistoryMessage
+    {
+        public string? Id { get; init; }
+        public int Role { get; init; }
+        public string? Content { get; init; }
+        public string? Timestamp { get; init; }
     }
 }

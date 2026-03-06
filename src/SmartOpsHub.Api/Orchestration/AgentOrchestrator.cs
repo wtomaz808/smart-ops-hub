@@ -50,6 +50,29 @@ public sealed partial class AgentOrchestrator(
         return session;
     }
 
+    public async Task<AgentSession> FindOrCreateSessionAsync(string userId, AgentCategory agentCategory, CancellationToken cancellationToken = default)
+    {
+        // Check in-memory cache first
+        var cached = _sessions.Values.FirstOrDefault(s => s.UserId == userId && s.AgentCategory == agentCategory);
+        if (cached is not null)
+        {
+            LogSessionResumed(logger, cached.SessionId, userId, agentCategory);
+            return cached;
+        }
+
+        // Check database for existing session
+        var existing = await sessionRepository.GetByUserAndCategoryAsync(userId, agentCategory, cancellationToken).ConfigureAwait(false);
+        if (existing is not null)
+        {
+            _sessions.TryAdd(existing.SessionId, existing);
+            LogSessionResumed(logger, existing.SessionId, userId, agentCategory);
+            return existing;
+        }
+
+        // No existing session — create a new one
+        return await CreateSessionAsync(userId, agentCategory, cancellationToken).ConfigureAwait(false);
+    }
+
     public async Task<ChatMessage> ProcessMessageAsync(string sessionId, string userMessage, CancellationToken cancellationToken = default)
     {
         var session = await GetRequiredSessionAsync(sessionId, cancellationToken).ConfigureAwait(false);
@@ -253,6 +276,9 @@ public sealed partial class AgentOrchestrator(
 
     [LoggerMessage(Level = LogLevel.Information, Message = "Created session {SessionId} for user {UserId} with agent {AgentCategory}")]
     private static partial void LogSessionCreated(ILogger logger, string sessionId, string userId, AgentCategory agentCategory);
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "Resumed session {SessionId} for user {UserId} with agent {AgentCategory}")]
+    private static partial void LogSessionResumed(ILogger logger, string sessionId, string userId, AgentCategory agentCategory);
 
     [LoggerMessage(Level = LogLevel.Information, Message = "Processed message for session {SessionId}, history length: {HistoryLength}")]
     private static partial void LogMessageProcessed(ILogger logger, string sessionId, int historyLength);

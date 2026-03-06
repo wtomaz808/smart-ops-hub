@@ -16,6 +16,19 @@ public sealed class SessionRepository(SmartOpsHubDbContext dbContext, IAgentRegi
         return entity is null ? null : ToAgentSession(entity);
     }
 
+    public async Task<AgentSession?> GetByUserAndCategoryAsync(string userId, AgentCategory agentCategory, CancellationToken cancellationToken = default)
+    {
+        var categoryStr = agentCategory.ToString();
+        var entity = await dbContext.AgentSessions
+            .Include(s => s.Messages.OrderBy(m => m.Timestamp))
+            .Where(s => s.UserId == userId && s.AgentType == categoryStr)
+            .OrderByDescending(s => s.LastActivityAt)
+            .FirstOrDefaultAsync(cancellationToken)
+            .ConfigureAwait(false);
+
+        return entity is null ? null : ToAgentSession(entity);
+    }
+
     public async Task<IReadOnlyList<AgentSession>> GetByUserIdAsync(string userId, CancellationToken cancellationToken = default)
     {
         var entities = await dbContext.AgentSessions
